@@ -313,7 +313,7 @@ static int
 erase_volume(const char *volume) {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
-    ui_print("Formatting %s...\n", volume);
+    ui_print("正在格式化 %s...\n", volume);
 
     if (strcmp(volume, "/cache") == 0) {
         // Any part of the log we'd copied to cache is now gone.
@@ -512,7 +512,7 @@ static int
 update_directory(const char* path, const char* unmount_when_done) {
     ensure_path_mounted(path);
 
-    const char* MENU_HEADERS[] = { "Choose a package to install:",
+    const char* MENU_HEADERS[] = { "选择包安装:",
                                    path,
                                    "",
                                    NULL };
@@ -608,7 +608,7 @@ update_directory(const char* path, const char* unmount_when_done) {
             strlcat(new_path, "/", PATH_MAX);
             strlcat(new_path, item, PATH_MAX);
 
-            ui_print("\n-- Install %s ...\n", path);
+            ui_print("\n-- 安装 %s ...\n", path);
             set_sdcard_update_bootloader_message();
             char* copy = copy_sideloaded_package(new_path);
             if (unmount_when_done != NULL) {
@@ -639,7 +639,7 @@ static void
 wipe_data(int confirm) {
 
     if(is_dualsystem() && isTrueDualbootEnabled()) {
-        int system = select_system("Choose system to restore:");
+        int system = select_system("选择系统恢复:");
         if (system>=0) {
             if(set_active_system(system)!=0) {
                 LOGE("Failed setting system. Please REBOOT.\n");
@@ -653,24 +653,24 @@ wipe_data(int confirm) {
         static char** title_headers = NULL;
 
         if (title_headers == NULL) {
-            char* headers[] = { "Confirm wipe of all user data?",
-                                "  THIS CAN NOT BE UNDONE.",
+            char* headers[] = { "确认清空所有数据?",
+                                "  这将不能恢复.",
                                 "",
                                 NULL };
             title_headers = prepend_title((const char**)headers);
         }
 
-        char* items[] = { " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " Yes -- delete all user data",   // [7]
-                          " No",
-                          " No",
-                          " No",
+        char* items[] = { " 不",
+                          " 不",
+                          " 不",
+                          " 不",
+                          " 不",
+                          " 不",
+                          " 不",
+                          " 是的 -- 清空所有数据",   // [7]
+                          " 不",
+                          " 不",
+                          " 不",
                           NULL };
 
         int chosen_item = get_menu_selection(title_headers, items, 1, 0);
@@ -679,7 +679,7 @@ wipe_data(int confirm) {
         }
     }
 
-    ui_print("\n-- Wiping data...\n");
+    ui_print("\n-- 正在清空数据..\n");
     device_wipe_data();
     erase_volume("/data");
     erase_volume("/cache");
@@ -688,7 +688,7 @@ wipe_data(int confirm) {
     }
     erase_volume("/sd-ext");
     erase_volume("/sdcard/.android_secure");
-    ui_print("Data wipe complete.\n");
+    ui_print("完成.\n");
 }
 
 int ui_menu_level = 1;
@@ -727,11 +727,11 @@ prompt_and_wait() {
                 break;
 
             case ITEM_WIPE_CACHE:
-                if (confirm_selection("Confirm wipe?", "Yes - Wipe Cache"))
+                if (confirm_selection("确认清空?", "是的 - 清空缓存"))
                 {
-                    ui_print("\n-- Wiping cache...\n");
+                    ui_print("\n-- 正在清空缓存...\n");
                     erase_volume("/cache");
-                    ui_print("Cache wipe complete.\n");
+                    ui_print("清空完毕.\n");
                     if (!ui_text_visible()) return;
                 }
                 break;
@@ -941,16 +941,16 @@ main(int argc, char **argv) {
 
     if (update_package != NULL) {
         status = install_package(update_package);
-        if (status != INSTALL_SUCCESS) ui_print("Installation aborted.\n");
+        if (status != INSTALL_SUCCESS) ui_print("安装出错.\n");
     } else if (wipe_data) {
         if (device_wipe_data()) status = INSTALL_ERROR;
         if (erase_volume("/data")) status = INSTALL_ERROR;
         if (has_datadata() && erase_volume("/datadata")) status = INSTALL_ERROR;
         if (wipe_cache && erase_volume("/cache")) status = INSTALL_ERROR;
-        if (status != INSTALL_SUCCESS) ui_print("Data wipe failed.\n");
+        if (status != INSTALL_SUCCESS) ui_print("清空失败.\n");
     } else if (wipe_cache) {
         if (wipe_cache && erase_volume("/cache")) status = INSTALL_ERROR;
-        if (status != INSTALL_SUCCESS) ui_print("Cache wipe failed.\n");
+        if (status != INSTALL_SUCCESS) ui_print("清空失败.\n");
     } else if (sideload) {
         signature_check_enabled = 0;
         ui_set_show_text(1);
@@ -973,7 +973,7 @@ main(int argc, char **argv) {
             LOGI("Running extendedcommand...\n");
             int dualsystem_error = 0;
             if(is_dualsystem()) {
-                int system = select_system("Choose system to install ROM:");
+                int system = select_system("选择系统安装:");
                 if (system>=0) {
                     if(set_active_system(system)!=0) {
                         ui_print("Failed setting system. Please REBOOT!\n");
@@ -1028,11 +1028,11 @@ main(int argc, char **argv) {
 
     sync();
     if(!poweroff) {
-        ui_print("Rebooting...\n");
+        ui_print("正在重启...\n");
         android_reboot(ANDROID_RB_RESTART, 0, 0);
     }
     else {
-        ui_print("Shutting down...\n");
+        ui_print("正在关机...\n");
         android_reboot(ANDROID_RB_POWEROFF, 0, 0);
     }
     return EXIT_SUCCESS;

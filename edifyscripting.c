@@ -141,14 +141,14 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
         return NULL;
     }
     
-    ui_print("Formatting %s...\n", path);
+    ui_print("正在格式化 %s...\n", path);
     if (0 != format_volume(path)) {
         free(path);
         return StringValue(strdup(""));
     }
     
     if (strcmp(path, "/data") == 0 && has_datadata()) {
-        ui_print("Formatting /datadata...\n", path);
+        ui_print("正在格式化 /datadata...\n", path);
         if (0 != format_volume("/datadata")) {
             free(path);
             return StringValue(strdup(""));

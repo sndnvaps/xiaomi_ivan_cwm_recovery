@@ -364,7 +364,7 @@ static int
 really_install_package(const char *path)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
-    ui_print("Finding update package...\n");
+    ui_print("查找安装包...\n");
     ui_show_indeterminate_progress();
     LOGI("Update location: %s\n", path);
 
@@ -373,7 +373,7 @@ really_install_package(const char *path)
         return INSTALL_CORRUPT;
     }
 
-    ui_print("Opening update package...\n");
+    ui_print("打开安装包...\n");
 
     int err;
 
@@ -387,7 +387,7 @@ really_install_package(const char *path)
         LOGI("%d key(s) loaded from %s\n", numKeys, PUBLIC_KEYS_FILE);
 
         // Give verification half the progress bar...
-        ui_print("Verifying update package...\n");
+        ui_print("验证安装包...\n");
         ui_show_progress(
                 VERIFICATION_PROGRESS_FRACTION,
                 VERIFICATION_PROGRESS_TIME);
@@ -398,7 +398,7 @@ really_install_package(const char *path)
         if (err != VERIFY_SUCCESS) {
             LOGE("signature verification failed\n");
             ui_show_text(1);
-            if (!confirm_selection("Install Untrusted Package?", "Yes - Install untrusted zip"))
+            if (!confirm_selection("安装不被信任的包?", "是的 - 安装"))
                 return INSTALL_CORRUPT;
         }
     }
@@ -414,7 +414,7 @@ really_install_package(const char *path)
 
     /* Verify and install the contents of the package.
      */
-    ui_print("Installing update...\n");
+    ui_print("正在安装...\n");
     return try_update_binary(path, &zip);
 }
 
