@@ -1594,6 +1594,7 @@ void show_advanced_menu()
                          "内置SD卡分区",
                          "当前系统: ",
                          NULL,
+                         "调整系统分区大小",
                          NULL
         };
 
@@ -1708,6 +1709,9 @@ void show_advanced_menu()
                 break;
             case 10:
                 enableTrueDualboot(!isTrueDualbootEnabled());
+                break;
+            case 11:
+                partition_system();
                 break;
         }
     }
@@ -2058,7 +2062,7 @@ int isTrueDualbootEnabled() {
     int ret;
     if (ensure_path_mounted_at_mount_point("/data", DUALBOOT_PATH_DATAROOT)!=0) {
         LOGE("TrueDualBoot: failed mounting data\n");
-        return -1;
+        return 0;
     }
     ret = lstat(DUALBOOT_FILE_TRUEDUALBOOT, &st);
     return (ret==0);
@@ -2110,4 +2114,18 @@ int enableTrueDualboot(int enable) {
     ui_setMenuTextColor(MENU_TEXT_COLOR);
 
     return 0;
+}
+
+void partition_system() {
+    char confirm[PATH_MAX];
+    ui_setMenuTextColor(MENU_TEXT_COLOR_RED);
+    sprintf(confirm,"是的 - 调整,调整后请进入fastboot");
+    if(confirm_selection("危险操作,确认?",confirm)) {
+        //Repartition system
+        ui_print("正在调整系统分区……\n");
+        ui_print("调整后请进入fastboot手动刷入recovery!\n");
+        __system("/sbin/sh /res/partition/systempart.sh");
+        ui_print("完成.\n");
+    }
+    ui_setMenuTextColor(MENU_TEXT_COLOR);
 }
