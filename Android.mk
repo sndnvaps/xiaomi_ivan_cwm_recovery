@@ -34,7 +34,7 @@ RECOVERY_NAME := ClockworkMod Recovery
 LOCAL_CFLAGS += -DI_AM_KOUSH
 else
 ifndef RECOVERY_NAME
-RECOVERY_NAME := 中文双系统Recovery
+RECOVERY_NAME := CWM Recovery
 endif
 endif
 

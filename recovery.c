@@ -976,7 +976,7 @@ main(int argc, char **argv) {
                 int system = select_system("选择系统安装:");
                 if (system>=0) {
                     if(set_active_system(system)!=0) {
-                        ui_print("Failed setting system. Please REBOOT!\n");
+                        ui_print("设置系统失败，请重启!\n");
                         dualsystem_error = 1;
                         remove_extendedcommand();
                     }

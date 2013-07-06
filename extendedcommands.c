@@ -171,7 +171,7 @@ void show_install_update_menu()
                     int system = select_system("选择系统安装:");
                     if (system>=0) {
                         if(set_active_system(system)!=0) {
-                            ui_print("Failed setting system. Please REBOOT!\n");
+                            ui_print("设置系统失败，请重启!\n");
                         }
                         else {
                             char confirm[PATH_MAX];
@@ -194,7 +194,7 @@ void show_install_update_menu()
                     int system = select_system("选择系统安装:");
                     if (system>=0) {
                         if(set_active_system(system)!=0)
-                            ui_print("Failed setting system. Please REBOOT!\n");
+                            ui_print("设置系统失败，请重启!\n");
                         else apply_from_adb();
                     }
                 }
@@ -429,7 +429,7 @@ void show_choose_zip_menu(const char *mount_point)
         int system = select_system("选择系统安装:");
         if (system>=0) {
             if(set_active_system(system)!=0) {
-                ui_print("Failed setting system. Please REBOOT!\n");
+                ui_print("设置系统失败，请重启!\n");
             }
             else {
                 char confirm[PATH_MAX];
@@ -502,7 +502,7 @@ void show_nandroid_restore_menu(const char* path)
                 return;
         }
         if(result!=0)
-            ui_print("Failed setting system. Please REBOOT!\n");
+            ui_print("设置系统失败，请重启!\n");
         return;
     }
     if (confirm_selection("确认恢复?", "是的 - 恢复"))
@@ -1101,7 +1101,7 @@ void show_partition_menu()
                 handle_data_media_format(1);
                 ui_print("正在格式化 /data...\n");
                 if (0 != format_volume("/data"))
-                    ui_print("Error formatting /data!\n");
+                    ui_print("挂载 /data 失败!\n");
                 else
                     ui_print("完成.\n");
                 handle_data_media_format(0);  
@@ -1892,7 +1892,7 @@ int verify_root_and_recovery(int system_number) {
             char confirm[PATH_MAX];
             if(is_dualsystem()) sprintf(confirm, "是的 - 禁止系统%d刷写Recovery", system_number);
             else sprintf(confirm, "是的 - 禁止刷写Recovery");
-            if (confirm_selection("ROM可能刷入默认Recovery,修复吗?", confirm)) {
+            if (confirm_selection("ROM可能刷入默认Recovery\n修复吗?", confirm)) {
                 __system("chmod -x /system/etc/install-recovery.sh");
             }
         }
@@ -2012,14 +2012,14 @@ int setBootmode(char* bootmode) {
    // open misc-partition
    FILE* misc = fopen("/dev/block/platform/msm_sdcc.1/by-name/misc", "wb");
    if (misc == NULL) {
-      printf("Error opening misc partition.\n");
+      printf("打开misc分区失败.\n");
       return -1;
    }
 
    // write bootmode
    fseek(misc, 0x1000, SEEK_SET);
    if(fputs(bootmode, misc)<0) {
-      printf("Error writing bootmode to misc partition.\n");
+      printf("写入启动模式失败.\n");
       return -1;
    }
 
@@ -2032,14 +2032,14 @@ int getBootmode(char* bootmode) {
    // open misc-partition
    FILE* misc = fopen("/dev/block/platform/msm_sdcc.1/by-name/misc", "rb");
    if (misc == NULL) {
-      printf("Error opening misc partition.\n");
+      printf("打开misc分区失败.\n");
       return -1;
    }
 
    // write bootmode
    fseek(misc, 0x1000, SEEK_SET);
    if(fgets(bootmode, 13, misc)==NULL) {
-      printf("Error reading bootmode from misc partition.\n");
+      printf("读取启动模式失败.\n");
       return -1;
    }
 
@@ -2069,7 +2069,7 @@ int enableTrueDualboot(int enable) {
     ui_setMenuTextColor(MENU_TEXT_COLOR_RED);
     sprintf(confirm, "是的 - %s 真正双系统", enable?"启用":"禁用");
 
-    if (confirm_selection("这将清空所有数据，继续?", confirm)) {
+    if (confirm_selection("将清空所有数据", confirm)) {
         // unmount /data
         if(ensure_path_unmounted("/data")!=0) {
             LOGE("Error unmounting /data!\n");
