@@ -2118,14 +2118,39 @@ int enableTrueDualboot(int enable) {
 
 void partition_system() {
     char confirm[PATH_MAX];
+    char* headers[] = { "系统分区大小", "", NULL };
+    char* items[] = { "300M",
+                      "400M",
+                      "500M",
+                      NULL };
+    int chosen_item = get_filtered_menu_selection(headers, items, 0, 0, sizeof(items) / sizeof(char*));
     ui_setMenuTextColor(MENU_TEXT_COLOR_RED);
-    sprintf(confirm,"是的 - 调整,调整后请进入fastboot");
-    if(confirm_selection("危险操作,确认?",confirm)) {
-        //Repartition system
-        ui_print("正在调整系统分区……\n");
-        ui_print("调整后请进入fastboot手动刷入recovery!\n");
-        __system("/sbin/sh /res/partition/systempart.sh");
-        ui_print("完成.\n");
+    for(;;) {
+        if(chosen_item == GO_BACK) {
+            break;
+        }
+        sprintf(confirm,"是的 - 调整,调整后请进入fastboot");
+        if(confirm_selection("危险操作,确认?",confirm)) {
+            //Repartition system
+            ui_print("正在调整系统分区……\n");
+            ui_print("调整后请进入fastboot手动刷入recovery!\n");
+            switch(chosen_item)
+            {
+                case 0:
+                    __system("/sbin/sh /res/partition/systempart_300.sh");
+                    break;
+                case 1:
+                    __system("/sbin/sh /res/partition/systempart_400.sh");
+                    break;
+                case 2:
+                    __system("/sbin/sh /res/partition/systempart_500.sh");
+                    break;
+            }
+            ui_print("完成.\n");
+        }
+        else {
+            break;
+        }
     }
     ui_setMenuTextColor(MENU_TEXT_COLOR);
 }
