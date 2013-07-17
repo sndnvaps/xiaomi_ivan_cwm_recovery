@@ -865,7 +865,7 @@ main(int argc, char **argv) {
 
     device_ui_init(&ui_parameters);
     ui_init();
-    ui_print(EXPAND(RECOVERY_VERSION)"\n");
+    ui_print("By 秋叶随风Ivan\n");
     load_volume_table();
     process_volumes();
     LOGI("Processing arguments.\n");
