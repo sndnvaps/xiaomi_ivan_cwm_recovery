@@ -706,27 +706,19 @@ int confirm_selection(const char* title, const char* confirm)
     one_confirm = 1;
 #endif 
     if (one_confirm) {
-        char* items[] = { "不",
-                        confirm, //" Yes -- wipe partition",   // [1]
+        char* items[] = { 
+                        confirm,   // [0]
+                        " 取消 -- 返回",
                         NULL };
         int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
         return chosen_item == 1;
     }
     else {
-        char* items[] = { "不",
-                        "不",
-                        "不",
-                        "不",
-                        "不",
-                        "不",
-                        "不",
-                        confirm, //" Yes -- wipe partition",   // [7]
-                        "不",
-                        "不",
-                        "不",
+        char* items[] = { confirm,   // [0]
+                        " 取消 -- 返回",
                         NULL };
         int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
-        return chosen_item == 7;
+        return chosen_item == 0;
     }
     }
 
@@ -1126,22 +1118,22 @@ void show_partition_menu()
                 if(systemNumber>0) {
                     if (find_mounted_volume_by_device(v->device)!=NULL) {
                         if (0 != ensure_path_unmounted("/system"))
-                            ui_print("Error unmounting /system!\n");
+                            ui_print("卸载出错 /system!\n");
                     }
                     else if(set_active_system(DUALBOOT_ITEM_BOTH)==0) {
                         if (0 != ensure_path_mounted_at_mount_point(v->mount_point, "/system"))
-                            ui_print("Error mounting %s at /system!\n",  v->mount_point);
+                            ui_print("挂载出错 %s at /system!\n",  v->mount_point);
                     }
                     continue;
                 }
                 else if(dataNumber>0) {
                     if (is_path_mounted("/data")!=NULL) {
                         if (0 != ensure_path_unmounted("/data"))
-                            ui_print("Error unmounting /data!\n");
+                            ui_print("卸载出错 /data!\n");
                     }
                     else if(set_active_system(DUALBOOT_ITEM_BOTH)==0) {
                         if (0 != ensure_path_mounted_at_mount_point(v->mount_point, "/data"))
-                            ui_print("Error mounting %s at /data!\n",  v->mount_point);
+                            ui_print("挂载出错 %s at /data!\n",  v->mount_point);
                     }
                     continue;
                 }
@@ -1150,12 +1142,12 @@ void show_partition_menu()
             if (is_path_mounted(v->mount_point))
             {
                 if (0 != ensure_path_unmounted(v->mount_point))
-                    ui_print("Error unmounting %s!\n", v->mount_point);
+                    ui_print("卸载  %s 出错 !\n", v->mount_point);
             }
             else
             {
                 if (0 != ensure_path_mounted(v->mount_point))
-                    ui_print("Error mounting %s!\n",  v->mount_point);
+                    ui_print("挂载  %s 出错 !\n",  v->mount_point);
             }
         }
         else if (chosen_item < (mountable_volumes + formatable_volumes))
@@ -1174,7 +1166,7 @@ void show_partition_menu()
                 continue;
             ui_print("正在格式化 %s...\n", v->mount_point);
             if (0 != format_volume(v->mount_point))
-                ui_print("Error formatting %s!\n", v->mount_point);
+                ui_print("格式化 %s 出错!\n", v->mount_point);
             else
                 ui_print("完成.\n");
         }
@@ -1264,10 +1256,10 @@ void show_nandroid_advanced_restore_menu(const char* path)
 
     if(is_dualsystem() && chosen_item>=0 && chosen_item<=5) {
         if(!((chosen_item==4 || chosen_item==5) && !isTrueDualbootEnabled())) {
-            system = select_system("Choose system to restore:");
+            system = select_system("选择系统恢复:");
             if (system>=0) {
                 if(set_active_system(system)!=0) {
-                    LOGE("Failed setting system. Please REBOOT.\n");
+                    LOGE("设置系统失败. 请重启.\n");
                     return;
                 }
             }
@@ -1618,8 +1610,8 @@ void show_advanced_menu()
             else
                 list[9]=NULL;
 
-            if(isTrueDualbootEnabled()) list[10] = "禁用 真正双系统";
-            else list[10] = "启用 真正双系统";
+            if(isTrueDualbootEnabled()) list[10] = "关闭 双系统共存";
+            else list[10] = "打开 双系统共存";
         }
         int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
         if (chosen_item == GO_BACK)
@@ -1634,7 +1626,7 @@ void show_advanced_menu()
                     int system = select_system("选择系统清空:");
                     if (system>=0) {
                         if(set_active_system(system)!=0) {
-                            ui_print("Failed setting system. Please REBOOT!\n");
+                            ui_print("设置系统错误. 请重启!\n");
                             break;
                         }
                     }
@@ -1658,8 +1650,8 @@ void show_advanced_menu()
                 break;
             case 3:
             {
-                ui_print("Outputting key codes.\n");
-                ui_print("Go back to end debugging.\n");
+                ui_print("输出键值.\n");
+                ui_print("返回键终止调试.\n");
                 int key;
                 int action;
                 do
@@ -1679,7 +1671,7 @@ void show_advanced_menu()
                     int system = select_system("选择系统修复权限:");
                     if (system>=0) {
                         if(set_active_system(system)!=0) {
-                            ui_print("Failed setting system. Please REBOOT!\n");
+                            ui_print("系统设置失败. 请重启!\n");
                             break;
                         }
                     }
@@ -1762,7 +1754,7 @@ void create_fstab()
 }
 
 int bml_check_volume(const char *path) {
-    ui_print("Checking %s...\n", path);
+    ui_print("检查 %s...\n", path);
     ensure_path_unmounted(path);
     if (0 == ensure_path_mounted(path)) {
         ensure_path_unmounted(path);
@@ -1775,7 +1767,7 @@ int bml_check_volume(const char *path) {
         return 0;
     }
     
-    ui_print("%s may be rfs. Checking...\n", path);
+    ui_print("%s 可能是 rfs. 检查...\n", path);
     char tmp[PATH_MAX];
     sprintf(tmp, "mount -t rfs %s %s", vol->device, path);
     int ret = __system(tmp);
@@ -1796,7 +1788,7 @@ void process_volumes() {
     if (device_flash_type() != BML)
         return;
 
-    ui_print("Checking for ext4 partitions...\n");
+    ui_print("检查 for ext4 partitions...\n");
     int ret = 0;
     ret = bml_check_volume("/system");
     ret |= bml_check_volume("/data");
@@ -1805,7 +1797,7 @@ void process_volumes() {
     ret |= bml_check_volume("/cache");
     
     if (ret == 0) {
-        ui_print("Done!\n");
+        ui_print("完成!\n");
         return;
     }
     
@@ -1903,7 +1895,7 @@ int verify_root_and_recovery(int system_number) {
     }
 
     int exists = 0;
-/*    if (0 == lstat("/system/bin/su", &st)) {
+    if (0 == lstat("/system/bin/su", &st)) {
         exists = 1;
         if (S_ISREG(st.st_mode)) {
             if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
@@ -1943,7 +1935,7 @@ int verify_root_and_recovery(int system_number) {
             __system("chmod 6755 /system/xbin/su");
             __system("ln -sf /system/xbin/su /system/bin/su");
         }
-    } */
+    }
 
     if(is_dualsystem()) {
         if(isTrueDualbootEnabled())
@@ -1960,8 +1952,8 @@ int verify_root_and_recovery(int system_number) {
 int select_system(const char* title)
 {
     char* headers[] = { title, "", NULL };
-    char* items[] = { "系统1",
-                      "系统2",
+    char* items[] = { "系统[1]",
+                      "系统[2]",
                       NULL };
     int chosen_item = get_menu_selection(headers, items, 0, 0);
     return chosen_item+1;
@@ -1970,9 +1962,9 @@ int select_system(const char* title)
 int select_dualboot_backupmode(const char* title)
 {
     char* headers[] = { title, "", NULL };
-    char* items[] = { "仅备份系统1",
-                      "仅备份系统2",
-                      "备份全部",
+    char* items[] = { "备份系统[1]",
+                      "备份系统[2]",
+                      "同时备份双系统",
                       NULL };
     int chosen_item = get_menu_selection(headers, items, 0, 0);
     return chosen_item==2?DUALBOOT_ITEM_BOTH:chosen_item+1;
@@ -1981,9 +1973,9 @@ int select_dualboot_backupmode(const char* title)
 int select_dualboot_restoremode(const char* title, const char* file)
 {
     char* headers[] = { title, "", NULL };
-    char* items[] = { "仅恢复系统1",
-                      "仅恢复系统2",
-                      "恢复全部",
+    char* items[] = { "仅恢复系统[1]",
+                      "仅恢复系统[2]",
+                      "同时恢复双系统",
                       "恢复 系统1->系统2",
                       "恢复 系统2->系统1",
                       "交换恢复",
