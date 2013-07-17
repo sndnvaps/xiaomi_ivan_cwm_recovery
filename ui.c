@@ -254,7 +254,8 @@ static void draw_virtualkeys_locked() {
 static void draw_text_line(int row, const char* t, int align) {
     int col = 0;
     if (t[0] != '\0') {
-        int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
+//        int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
+        int length = strnlen(t, MENU_MAX_COLS) * 7.6;
         switch(align)
         {
              case LEFT_ALIGN:
@@ -332,7 +333,7 @@ static void draw_screen_locked(void)
             }
 
             gr_color(MENU_TEXT_COLOR);
-            draw_text_line(1, batt_text, LEFT_ALIGN);
+            draw_text_line(0, batt_text, RIGHT_ALIGN);
             gr_fill(0, (menu_top + menu_sel - menu_show_start) * EXT_HEIGHT+EXT_HEIGHT/4,
                         gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*EXT_HEIGHT+EXT_HEIGHT/4+1);
 
