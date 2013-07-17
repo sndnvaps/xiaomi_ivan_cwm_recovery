@@ -660,21 +660,12 @@ wipe_data(int confirm) {
             title_headers = prepend_title((const char**)headers);
         }
 
-        char* items[] = { " 不",
-                          " 不",
-                          " 不",
-                          " 不",
-                          " 不",
-                          " 不",
-                          " 不",
-                          " 是的 -- 清空所有数据",   // [7]
-                          " 不",
-                          " 不",
-                          " 不",
+        char* items[] = { " 是的 -- 清空所有数据",   // [0]
+                          " 取消 -- 返回",
                           NULL };
 
         int chosen_item = get_menu_selection(title_headers, items, 1, 0);
-        if (chosen_item != 7) {
+        if (chosen_item != 0) {
             return;
         }
     }

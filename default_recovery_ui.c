@@ -22,14 +22,14 @@
 
 char* MENU_HEADERS[] = { NULL };
 
-char* MENU_ITEMS[] = { "重新启动",
+char* MENU_ITEMS[] = { "重启手机",
                        "安装zip",
                        "清空所有数据",
                        "清空缓存",
                        "备份/恢复",
                        "挂载/存储",
-                       "高级",
-                       "关机",
+                       "高级功能",
+                       "关闭手机",
                        NULL };
 
 void device_ui_init(UIParameters* ui_parameters) {
