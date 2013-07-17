@@ -29,6 +29,7 @@ char* MENU_ITEMS[] = { "重新启动",
                        "备份/恢复",
                        "挂载/存储",
                        "高级",
+                       "关机",
                        NULL };
 
 void device_ui_init(UIParameters* ui_parameters) {
