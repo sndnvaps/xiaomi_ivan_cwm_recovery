@@ -1894,48 +1894,6 @@ int verify_root_and_recovery(int system_number) {
         }
     }
 
-    int exists = 0;
-    if (0 == lstat("/system/bin/su", &st)) {
-        exists = 1;
-        if (S_ISREG(st.st_mode)) {
-            if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
-                ui_show_text(1);
-                ret = 1;
-                char confirm[PATH_MAX];
-                if(is_dualsystem()) sprintf(confirm, "是的 - 修复Root权限 (/system/bin/su) 于系统%d", system_number);
-                else sprintf(confirm, "是的 - 修复Root权限 (/system/bin/su)");
-                if (confirm_selection("Root权限可能丢失，修复?", confirm)) {
-                    __system("chmod 6755 /system/bin/su");
-                }
-            }
-        }
-    }
-
-    if (0 == lstat("/system/xbin/su", &st)) {
-        exists = 1;
-        if (S_ISREG(st.st_mode)) {
-            if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
-                ui_show_text(1);
-                ret = 1;
-                char confirm[PATH_MAX];
-                if(is_dualsystem()) sprintf(confirm, "是的 - 修复Root权限 (/system/bin/su) 于系统%d", system_number);
-                else sprintf(confirm, "是的 - 修复Root权限 (/system/bin/su)");
-                if (confirm_selection("Root权限可能丢失，修复?", confirm)) {
-                    __system("chmod 6755 /system/xbin/su");
-                }
-            }
-        }
-    }
-
-    if (!exists) {
-        ui_show_text(1);
-        ret = 1;
-        if (confirm_selection("没有Root权限，要Root吗?", "是的 - Root (/system/xbin/su)")) {
-            __system("cp /sbin/su.recovery /system/xbin/su");
-            __system("chmod 6755 /system/xbin/su");
-            __system("ln -sf /system/xbin/su /system/bin/su");
-        }
-    }
 
     if(is_dualsystem()) {
         if(isTrueDualbootEnabled())
