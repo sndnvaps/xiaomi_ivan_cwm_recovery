@@ -309,8 +309,8 @@ static void draw_screen_locked(void)
 
             gr_color(MENU_TEXT_COLOR);
             draw_text_line(0, batt_text, RIGHT_ALIGN);
-            gr_fill(0, (menu_top + menu_sel - menu_show_start) * EXT_HEIGHT+EXT_HEIGHT/4,
-                        gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*EXT_HEIGHT+EXT_HEIGHT/4+1);
+            gr_fill(0, (menu_top + menu_sel - menu_show_start-1) * EXT_HEIGHT+EXT_HEIGHT/4,
+                        gr_fb_width(), (menu_top + menu_sel - menu_show_start)*EXT_HEIGHT+EXT_HEIGHT/4+1);
 
             gr_color(HEADER_TEXT_COLOR);
             for (i = 0; i < menu_top; ++i) {
@@ -338,8 +338,8 @@ static void draw_screen_locked(void)
                     break;
             }
 
-            gr_fill(0, row*EXT_HEIGHT+EXT_HEIGHT/2-1,
-                        gr_fb_width(), row*EXT_HEIGHT+EXT_HEIGHT/2+1);
+            gr_fill(0, (row-1)*EXT_HEIGHT+EXT_HEIGHT/2-1,
+                        gr_fb_width(), (row-1)*EXT_HEIGHT+EXT_HEIGHT/2+1);
 #else
             row = draw_touch_menu(menu, menu_items, menu_top, menu_sel, menu_show_start);
 #endif
