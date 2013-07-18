@@ -43,7 +43,7 @@ static int gShowBackButton = 0;
 #endif
 
 #define MAX_COLS 96
-#define MAX_ROWS 32
+#define MAX_ROWS 15
 
 #define MENU_MAX_COLS 64
 #define MENU_MAX_ROWS 250
@@ -237,7 +237,8 @@ static void draw_progress_locked()
 static void draw_text_line(int row, const char* t, int align) {
     int col = 0;
     if (t[0] != '\0') {
-        int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
+//        int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
+        int length = strnlen(t, MENU_MAX_COLS) * 14.5;
         switch(align)
         {
              case LEFT_ALIGN:
@@ -300,14 +301,14 @@ static void draw_screen_locked(void)
             current = localtime(&now);
 
             char batt_text[40];
-            sprintf(batt_text, "[当前电量%d%% 时间%02D:%02D]", batt_level, current->tm_hour, current->tm_min);
+            sprintf(batt_text, "[电量%d%% 时间%02D:%02D]", batt_level, current->tm_hour, current->tm_min);
 
             if (now == NULL) { // just in case
-                sprintf(batt_text, "[当前电量%d%%]", batt_level);
+                sprintf(batt_text, "[电量%d%%]", batt_level);
             }
 
             gr_color(MENU_TEXT_COLOR);
-            draw_text_line(1, batt_text, LEFT_ALIGN);
+            draw_text_line(0, batt_text, RIGHT_ALIGN);
             gr_fill(0, (menu_top + menu_sel - menu_show_start) * EXT_HEIGHT+EXT_HEIGHT/4,
                         gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*EXT_HEIGHT+EXT_HEIGHT/4+1);
 
@@ -326,11 +327,11 @@ static void draw_screen_locked(void)
             for (i = menu_show_start + menu_top; i < (menu_show_start + menu_top + j); ++i) {
                 if (i == menu_top + menu_sel) {
                     gr_color(255, 255, 255, 255);
-                    draw_text_line(i - menu_show_start , menu[i], LEFT_ALIGN_MENU);
+                    draw_text_line(i - menu_show_start-1 , menu[i], LEFT_ALIGN_MENU);
                     gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
                 } else {
                     gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
-                    draw_text_line(i - menu_show_start, menu[i], LEFT_ALIGN_MENU);
+                    draw_text_line(i - menu_show_start-1, menu[i], LEFT_ALIGN_MENU);
                 }
                 row++;
                 if (row >= max_menu_rows)
@@ -542,7 +543,7 @@ void ui_init(void)
 #endif
 
     text_col = text_row = 0;
-    text_rows = gr_fb_height() / CHAR_HEIGHT;
+    text_rows = gr_fb_height() / CHAR_HEIGHT * 2;
     max_menu_rows = text_rows - MIN_LOG_ROWS;
 #ifdef BOARD_TOUCH_RECOVERY
     max_menu_rows = get_max_menu_rows(max_menu_rows);

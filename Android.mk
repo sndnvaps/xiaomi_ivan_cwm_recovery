@@ -51,7 +51,7 @@ endif
 endif
 
 ifeq ($(BOARD_USE_CUSTOM_RECOVERY_FONT),)
-  BOARD_USE_CUSTOM_RECOVERY_FONT := \"font_20x20.h\"
+  BOARD_USE_CUSTOM_RECOVERY_FONT := \"font_36x36.h\"
 endif
 
 BOARD_RECOVERY_CHAR_WIDTH := $(shell echo $(BOARD_USE_CUSTOM_RECOVERY_FONT) | cut -d _  -f 2 | cut -d . -f 1 | cut -d x -f 1)
