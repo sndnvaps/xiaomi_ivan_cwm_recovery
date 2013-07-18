@@ -856,7 +856,7 @@ main(int argc, char **argv) {
 
     device_ui_init(&ui_parameters);
     ui_init();
-    ui_print("基于ClockWorkMod Recovery\n由Mirom团队及M1cha定制\niptux / 秋叶随风 / Tobbytan / 喝雪碧的虾\n");
+    ui_print("自豪地使用CWM源码");
     load_volume_table();
     process_volumes();
     LOGI("Processing arguments.\n");

@@ -43,10 +43,12 @@ static int gShowBackButton = 0;
 #endif
 
 #define MAX_COLS 96
-#define MAX_ROWS 15
+#define MAX_ROWS 14
 
 #define MENU_MAX_COLS 64
 #define MENU_MAX_ROWS 250
+
+#define MENU_OFFSET -1
 
 #define MIN_LOG_ROWS 3
 
@@ -251,11 +253,12 @@ static void draw_virtualkeys_locked() {
 #define RIGHT_ALIGN 2
 #define LEFT_ALIGN_MENU 3
 
+
 static void draw_text_line(int row, const char* t, int align) {
     int col = 0;
     if (t[0] != '\0') {
-//        int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
-        int length = strnlen(t, MENU_MAX_COLS) * 7.6;
+        // int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
+        int length = strnlen(t, MENU_MAX_COLS) * 8.2;
         switch(align)
         {
              case LEFT_ALIGN:
@@ -326,16 +329,16 @@ static void draw_screen_locked(void)
             current = localtime(&now);
 
             char batt_text[40];
-            sprintf(batt_text, "[当前电量%d%% 时间%02D:%02D]", batt_level, current->tm_hour, current->tm_min);
+            sprintf(batt_text, "[电量%d%% 时间%02D:%02D]", batt_level, current->tm_hour, current->tm_min);
 
             if (now == NULL) { // just in case
-                sprintf(batt_text, "[当前电量%d%%]", batt_level);
+                sprintf(batt_text, "[电量%d%%]", batt_level);
             }
 
             gr_color(MENU_TEXT_COLOR);
             draw_text_line(0, batt_text, RIGHT_ALIGN);
-            gr_fill(0, (menu_top + menu_sel - menu_show_start) * EXT_HEIGHT+EXT_HEIGHT/4,
-                        gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*EXT_HEIGHT+EXT_HEIGHT/4+1);
+            gr_fill(0, (menu_top + menu_sel - menu_show_start + MENU_OFFSET) * EXT_HEIGHT+EXT_HEIGHT/4,
+                        gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+1);
 
             gr_color(HEADER_TEXT_COLOR);
             for (i = 0; i < menu_top; ++i) {
@@ -352,19 +355,19 @@ static void draw_screen_locked(void)
             for (i = menu_show_start + menu_top; i < (menu_show_start + menu_top + j); ++i) {
                 if (i == menu_top + menu_sel) {
                     gr_color(255, 255, 255, 255);
-                    draw_text_line(i - menu_show_start , menu[i], LEFT_ALIGN_MENU);
+                    draw_text_line(i - menu_show_start + MENU_OFFSET, menu[i], LEFT_ALIGN_MENU);
                     gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
                 } else {
                     gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
-                    draw_text_line(i - menu_show_start, menu[i], LEFT_ALIGN_MENU);
+                    draw_text_line(i - menu_show_start + MENU_OFFSET, menu[i], LEFT_ALIGN_MENU);
                 }
                 row++;
                 if (row >= max_menu_rows)
                     break;
             }
 
-            gr_fill(0, row*EXT_HEIGHT+EXT_HEIGHT/2-1,
-                        gr_fb_width(), row*EXT_HEIGHT+EXT_HEIGHT/2+1);
+            gr_fill(0, (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2-1,
+                        gr_fb_width(), (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2+1);
 #else
 
             if (menu_items <= max_menu_rows)
@@ -386,7 +389,7 @@ static void draw_screen_locked(void)
 
         int r;
         for (r = 0; r < (available_rows < MAX_ROWS ? available_rows : MAX_ROWS); r++) {
-            draw_text_line(start_row + r, text[(cur_row + r) % MAX_ROWS], LEFT_ALIGN);
+            draw_text_line(start_row + r - MENU_OFFSET, text[(cur_row + r) % MAX_ROWS], LEFT_ALIGN);
         }
     }
 
