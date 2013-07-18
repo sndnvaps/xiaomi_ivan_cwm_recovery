@@ -570,6 +570,27 @@ static int input_callback(int fd, short revents, void *data)
                 ev.code = KEY_POWER;    //KEY_ENTER
                 reset_gestures();
             }
+        }
+        if (touch_y > gr_fb_height() + 10) {
+            //触摸在手机底部按键上
+            vibrate(20);
+            if (touch_x > 0 && touch_x < gr_fb_width() / 3) {
+                //菜单键清屏
+                int clean_rows;
+                for (clean_rows = 0; clean_rows <= 15; clean_rows++) {
+                    ui_print("\n");
+                }
+                reset_gestures();
+            } else if (touch_x > gr_fb_width() / 3 && touch_x < gr_fb_width() / 3 * 2) {
+                //房子键确认
+                ev.code = KEY_POWER;
+                reset_gestures();
+            } else if (touch_x > gr_fb_width() /3 * 2 && touch_x < gr_fb_width()) {
+                //返回键返回
+                ev.code = KEY_BACK;
+                reset_gestures();
+            }
+        }
         if (slide_right == 1) {
             //右滑操作
             slide_right = 0;
@@ -582,7 +603,6 @@ static int input_callback(int fd, short revents, void *data)
         ev.value = 1;
         in_touch = 0;
         reset_gestures();
-        }
     }  else if (ev.type == touch_type && ev.code == touch_pos_x) {
         touch_x = ev.value;
         if (old_x != 0)

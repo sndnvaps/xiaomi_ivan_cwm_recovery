@@ -903,6 +903,8 @@ main(int argc, char **argv) {
     LOGI("device_recovery_start()\n");
     device_recovery_start();
 
+    enable_key_backlight();
+
     printf("Command:");
     for (arg = 0; arg < argc; arg++) {
         printf(" \"%s\"", argv[arg]);
@@ -1027,6 +1029,27 @@ main(int argc, char **argv) {
         android_reboot(ANDROID_RB_POWEROFF, 0, 0);
     }
     return EXIT_SUCCESS;
+}
+
+int enable_key_backlight() {
+    char str[20];
+    int fd;
+    int ret;
+
+    fd = open("/sys/class/leds/button-backlight/brightness", O_WRONLY);
+
+    if (fd < 0)
+        return -1;
+
+    ret = snprintf(str, sizeof(str), "%d", 255);
+    ret = write(fd, str, ret);
+
+    close(fd);
+
+    if (ret < 0)
+       return -1;
+
+    return 0;
 }
 
 int get_allow_toggle_display() {
