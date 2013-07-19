@@ -258,7 +258,7 @@ static void draw_text_line(int row, const char* t, int align) {
     int col = 0;
     if (t[0] != '\0') {
         // int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
-        int length = strnlen(t, MENU_MAX_COLS) * 8.2;
+        int length = strnlen(t, MENU_MAX_COLS) * 11.8;
         switch(align)
         {
              case LEFT_ALIGN:
@@ -329,10 +329,10 @@ static void draw_screen_locked(void)
             current = localtime(&now);
 
             char batt_text[40];
-            sprintf(batt_text, "[电量%d%% 时间%02D:%02D]", batt_level, current->tm_hour, current->tm_min);
+            sprintf(batt_text, "[%d%%][%02D:%02D]", batt_level, current->tm_hour, current->tm_min);
 
             if (now == NULL) { // just in case
-                sprintf(batt_text, "[电量%d%%]", batt_level);
+                sprintf(batt_text, "[%d%%]", batt_level);
             }
 
             gr_color(MENU_TEXT_COLOR);
@@ -704,7 +704,7 @@ void ui_init(void)
 #endif
     //if (max_menu_rows > MENU_MAX_ROWS)
     //    max_menu_rows = MENU_MAX_ROWS;
-    max_menu_rows = 13;
+    max_menu_rows = 11;
     if (text_rows > MAX_ROWS) text_rows = MAX_ROWS;
 
     text_rows = text_rows - (gr_get_height(surface) / EXT_HEIGHT) -1;
