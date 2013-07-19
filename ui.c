@@ -473,6 +473,8 @@ static void *progress_thread(void *cookie)
 /* The following code are based on code from Shendu Recovery.
  * We added touch recovery feature to it.
  * So now it's CWM Touch Recovery.
+ * Code by Shendu && PeterCxy.
+ * From CHINA.
  */
 
 static int rel_sum = 0;

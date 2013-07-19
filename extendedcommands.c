@@ -1608,7 +1608,7 @@ void show_advanced_menu()
             else if(strcmp(bootmode, "boot-system1")==0)
                 list[9]="当前系统: 2";
             else
-                list[9]=NULL;
+                list[9]="当前系统: 1";
 
             if(isTrueDualbootEnabled()) list[10] = "关闭 双系统共存";
             else list[10] = "打开 双系统共存";
