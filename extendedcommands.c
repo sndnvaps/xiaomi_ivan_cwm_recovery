@@ -1576,6 +1576,7 @@ void show_advanced_menu()
     for (;;)
     {
         char* list[] = { "重启Recovery",
+                         "重启到fastboot",
                          "清空虚拟机缓存",
                          "报告错误",
                          "按键测试",
@@ -1621,6 +1622,9 @@ void show_advanced_menu()
                 android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
                 break;
             case 1:
+                android_reboot(ANDROID_RB_RESTART2, 0, "bootloader");
+                break;
+            case 2:
                 if(is_dualsystem() && isTrueDualbootEnabled()) {
                     int system = select_system("选择系统清空:");
                     if (system>=0) {
@@ -1644,10 +1648,10 @@ void show_advanced_menu()
                 }
                 ensure_path_unmounted("/data");
                 break;
-            case 2:
+            case 3:
                 handle_failure(1);
                 break;
-            case 3:
+            case 4:
             {
                 ui_print("输出键值.\n");
                 ui_print("返回键终止调试.\n");
@@ -1662,10 +1666,10 @@ void show_advanced_menu()
                 while (action != GO_BACK);
                 break;
             }
-            case 4:
+            case 5:
                 ui_printlogtail(12);
                 break;
-            case 5:
+            case 6:
                 if(is_dualsystem()) {
                     int system = select_system("选择系统修复权限:");
                     if (system>=0) {
@@ -1682,23 +1686,23 @@ void show_advanced_menu()
                 __system("fix_permissions");
                 ui_print("完成!\n");
                 break;
-            case 6:
+            case 7:
                 partition_sdcard("/sdcard");
                 break;
-            case 7:
+            case 8:
                 partition_sdcard("/external_sd");
                 break;
-            case 8:
+            case 9:
                 partition_sdcard("/emmc");
                 break;
-            case 9:
+            case 10:
                 system = select_system("选择启动系统:");
                 if(system==DUALBOOT_ITEM_SYSTEM0)
                     setBootmode("boot-system0");
                 else if(system==DUALBOOT_ITEM_SYSTEM1)
                     setBootmode("boot-system1");
                 break;
-            case 10:
+            case 11:
                 enableTrueDualboot(!isTrueDualbootEnabled());
                 break;
         }
