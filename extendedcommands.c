@@ -1567,7 +1567,7 @@ int can_partition(const char* volume) {
 
 void show_advanced_menu()
 {
-    static char* headers[] = {  "高级",
+    static char* headers[] = {  "高级功能",
                                 "",
                                 NULL
     };
