@@ -639,7 +639,7 @@ static void
 wipe_data(int confirm) {
 
     if(is_dualsystem() && isTrueDualbootEnabled()) {
-        int system = select_system("选择系统恢复:");
+        int system = select_system("选择系统清空:");
         if (system>=0) {
             if(set_active_system(system)!=0) {
                 LOGE("Failed setting system. Please REBOOT.\n");
@@ -709,9 +709,13 @@ prompt_and_wait() {
         int status;
         switch (chosen_item) {
             case ITEM_REBOOT:
-                poweroff=0;
-                return;
-
+                if (is_dualsystem()) {
+                    reboot_multi_system();
+                    break;
+                }else{
+                    poweroff=0;
+                    return;
+                }
             case ITEM_WIPE_DATA:
                 wipe_data(ui_text_visible());
                 if (!ui_text_visible()) return;
@@ -1031,4 +1035,49 @@ main(int argc, char **argv) {
 
 int get_allow_toggle_display() {
     return allow_display_toggle;
+}
+
+void reboot_multi_system() {
+    static char** title_headers = NULL;
+    char bootmode[13];
+    getBootmode(&bootmode);
+    if (title_headers == NULL) {
+        char* headers[] = { "选择你要进入的系统",
+                            "没有开启双系统共存",
+                            "或者没有清空数据",
+                            "随意切换系统将",
+                            "可能无法进入系统",
+                            "",
+                            NULL };
+        title_headers = prepend_title((const char**)headers);
+    }
+
+    char* items[] = { "系统[1]",
+                      "系统[2]",
+                      NULL };
+    if(strcmp(bootmode, "boot-system0")==0)
+        items[0]="系统[1]: 最近";
+    else if(strcmp(bootmode, "boot-system1")==0)
+        items[1]="系统[2]: 最近";
+    for (;;)
+    {
+        int chosen_item = get_menu_selection(title_headers, items, 0, 0);
+
+        switch (chosen_item) {
+            case 0:
+                poweroff=0;
+                setBootmode("boot-system0");
+                sync();
+                android_reboot(ANDROID_RB_RESTART, 0, 0);
+                //return;
+            case 1:
+                poweroff=0;
+                setBootmode("boot-system1");
+                sync();
+                android_reboot(ANDROID_RB_RESTART, 0, 0);
+                //return;
+            default :
+                return;
+        }
+    }
 }

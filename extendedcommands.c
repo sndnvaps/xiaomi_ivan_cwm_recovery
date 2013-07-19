@@ -1610,7 +1610,7 @@ void show_advanced_menu()
             else
                 list[10]=NULL;
 
-            if(isTrueDualbootEnabled()) list[10] = "关闭 双系统共存";
+            if(isTrueDualbootEnabled()) list[11] = "关闭 双系统共存";
             else list[11] = "打开 双系统共存";
         }
         int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
@@ -2021,7 +2021,7 @@ int isTrueDualbootEnabled() {
 int enableTrueDualboot(int enable) {
     char confirm[PATH_MAX];
     ui_setMenuTextColor(MENU_TEXT_COLOR_RED);
-    sprintf(confirm, "是的 - %s 真正双系统", enable?"启用":"禁用");
+    sprintf(confirm, "是的 - %s 双系统共存", enable?"打开":"关闭");
 
     if (confirm_selection("将清空所有数据", confirm)) {
         // unmount /data
