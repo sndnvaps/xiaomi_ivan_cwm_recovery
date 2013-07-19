@@ -1591,27 +1591,27 @@ void show_advanced_menu()
         };
 
         if (!can_partition("/sdcard")) {
-            list[6] = NULL;
-        }
-        if (!can_partition("/external_sd")) {
             list[7] = NULL;
         }
-        if (!can_partition("/emmc")) {
+        if (!can_partition("/external_sd")) {
             list[8] = NULL;
+        }
+        if (!can_partition("/emmc")) {
+            list[9] = NULL;
         }
 
         if (is_dualsystem()) {
             char bootmode[13];
             getBootmode(&bootmode);
             if(strcmp(bootmode, "boot-system0")==0)
-                list[9]="当前系统: 1";
+                list[10]="当前系统: 1";
             else if(strcmp(bootmode, "boot-system1")==0)
-                list[9]="当前系统: 2";
+                list[10]="当前系统: 2";
             else
-                list[9]=NULL;
+                list[10]=NULL;
 
             if(isTrueDualbootEnabled()) list[10] = "关闭 双系统共存";
-            else list[10] = "打开 双系统共存";
+            else list[11] = "打开 双系统共存";
         }
         int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
         if (chosen_item == GO_BACK)
