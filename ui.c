@@ -43,18 +43,18 @@ static int gShowBackButton = 0;
 #endif
 
 #define MAX_COLS 96
-#define MAX_ROWS 14
+#define MAX_ROWS 3
 
 #define MENU_MAX_COLS 64
 #define MENU_MAX_ROWS 250
 
-#define MENU_OFFSET -1
+#define MENU_OFFSET -2
 
 #define MIN_LOG_ROWS 3
 
 #define CHAR_WIDTH BOARD_RECOVERY_CHAR_WIDTH
 #define CHAR_HEIGHT BOARD_RECOVERY_CHAR_HEIGHT
-#define EXT_HEIGHT CHAR_HEIGHT*2
+#define EXT_HEIGHT CHAR_HEIGHT*3
 
 #define UI_WAIT_KEY_TIMEOUT_SEC    3600
 #define UI_KEY_REPEAT_INTERVAL 80
@@ -337,8 +337,8 @@ static void draw_screen_locked(void)
 
             gr_color(MENU_TEXT_COLOR);
             draw_text_line(0, batt_text, RIGHT_ALIGN);
-            gr_fill(0, (menu_top + menu_sel - menu_show_start + MENU_OFFSET) * EXT_HEIGHT+EXT_HEIGHT/4,
-                        gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+1);
+            /* gr_fill(0, (menu_top + menu_sel - menu_show_start + MENU_OFFSET + 1) * EXT_HEIGHT+EXT_HEIGHT/4,
+                        gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+1); */
 
             gr_color(HEADER_TEXT_COLOR);
             for (i = 0; i < menu_top; ++i) {
@@ -389,7 +389,7 @@ static void draw_screen_locked(void)
 
         int r;
         for (r = 0; r < (available_rows < MAX_ROWS ? available_rows : MAX_ROWS); r++) {
-            draw_text_line(start_row + r - MENU_OFFSET, text[(cur_row + r) % MAX_ROWS], LEFT_ALIGN);
+            draw_text_line(start_row + r - MENU_OFFSET - 1, text[(cur_row + r) % MAX_ROWS], LEFT_ALIGN);
         }
     }
 
@@ -470,20 +470,25 @@ static void *progress_thread(void *cookie)
     return NULL;
 }
 
+/* The following code are based on code from Shendu Recovery.
+ * We added touch recovery feature to it.
+ * So now it's CWM Touch Recovery.
+ */
+
 static int rel_sum = 0;
 
 static int in_touch = 0;        // 1 means in touch
-static int slide_right = 0;     //向右滑
-static int slide_left = 0;      //向左滑
-static int touch_x = 0;         //当前触摸的x坐标
-static int touch_y = 0;         //当前触摸的y坐标
-static int old_x = 0;           //之前触摸的x坐标
-static int old_y = 0;           //之前触摸的y坐标
-static int diff_x = 0;          //差异x坐标
-static int diff_y = 0;          //差异y坐标
+static int slide_right = 0;     //Slide Right
+static int slide_left = 0;      //Slide Left
+static int touch_x = 0;         //X position
+static int touch_y = 0;         //Y position
+static int old_x = 0;           //X position of last touch
+static int old_y = 0;           //Y position of last touch
+static int diff_x = 0;          //The difference Y position
+static int diff_y = 0;          //The difference X position
 
 /**
- *  对坐标记录数据进行复位操作
+ *  Reset the records.
  */
 static void reset_gestures() {
     diff_x = 0;
@@ -555,95 +560,71 @@ static int input_callback(int fd, short revents, void *data)
         ev.type = EV_KEY;
         if (touch_y > (gr_fb_height() - gr_get_height(surface))
                 && touch_y <= gr_fb_height() && touch_x > 0) {
-            //触摸区域在虚拟按键上
-            vibrate(10);    //振动
+            //Touch on virtual keys
+            vibrate(10);    //Vibrate
             if (touch_x < (keywidth + keyoffset)) {
-                //最左的按键，下
+                //down
                 ev.code = KEY_DOWN;
                 reset_gestures();
             } else if (touch_x < ((keywidth * 2) + keyoffset)) {
-                //上
+                //up
                 ev.code = KEY_UP;
                 reset_gestures();
             } else if (touch_x < ((keywidth * 3) + keyoffset)) {
-                //返回
+                //back
                 ev.code = KEY_BACK;
                 reset_gestures();
             } else {
                 ev.code = KEY_POWER;    //KEY_ENTER
                 reset_gestures();
             }
-        }
-        if (touch_y > gr_fb_height() + 10) {
-            //触摸在手机底部按键上
+        } else if (touch_y > gr_fb_height() + 10) {
+            //Touch on bottom touch keys
             vibrate(20);
             if (touch_x > 0 && touch_x < gr_fb_width() / 3) {
-                //菜单键清屏
-                int clean_rows;
-                for (clean_rows = 0; clean_rows <= 15; clean_rows++) {
-                    ui_print("\n");
+                //MENU KEY slides down
+                if (menu_show_start + max_menu_rows + MENU_OFFSET < menu_items) {
+                    menu_show_start = menu_show_start + max_menu_rows + MENU_OFFSET;
+                } else if (menu_items > max_menu_rows + MENU_OFFSET) {
+                    menu_show_start = menu_items - (max_menu_rows + MENU_OFFSET);
                 }
+                update_screen_locked();
                 reset_gestures();
             } else if (touch_x > gr_fb_width() / 3 && touch_x < gr_fb_width() / 3 * 2) {
-                //房子键确认
-                ev.code = KEY_POWER;
+                //HOME KEY slides up
+                if (menu_show_start - (max_menu_rows + MENU_OFFSET) >= 0) {
+                    menu_show_start = menu_show_start - (max_menu_rows + MENU_OFFSET);
+                } else {
+                    menu_show_start = 0;
+                }
+                update_screen_locked();
                 reset_gestures();
             } else if (touch_x > gr_fb_width() /3 * 2 && touch_x < gr_fb_width()) {
-                //返回键返回
+                //BACK KEY returns
                 ev.code = KEY_BACK;
                 reset_gestures();
             }
+        } else {
+            //Find the touching menu item.
+            int menu_item_current;
+            for (menu_item_current = menu_show_start; menu_item_current < menu_items; menu_item_current++) {
+                if (touch_y >= (menu_top + menu_item_current - menu_show_start + MENU_OFFSET) * EXT_HEIGHT+EXT_HEIGHT/4 && touch_y <= (menu_top + menu_item_current - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+1) {
+                    //Touching menu item found.
+                    menu_sel = menu_item_current;
+                    ev.code = KEY_POWER;
+                    update_screen_locked();
+                    break;
+                }
+            }
+            fake_key = 1;
+            ev.value = 1;
+            in_touch = 0;
+            reset_gestures();
         }
-        if (slide_right == 1) {
-            //右滑操作
-            slide_right = 0;
-        } else if (slide_left == 1) {
-            //左滑操作
-            slide_left = 0;
-        }
-
-        fake_key = 1;
-        ev.value = 1;
-        in_touch = 0;
-        reset_gestures();
     }  else if (ev.type == touch_type && ev.code == touch_pos_x) {
         touch_x = ev.value;
-        if (old_x != 0)
-            diff_x += touch_x - old_x;
-
-        if (touch_y < (gr_fb_height() - gr_get_height(surface))) {
-            if (diff_x > (gr_fb_width() / 4)) {
-                slide_right = 1;
-                reset_gestures();
-            } else if (diff_x < ((gr_fb_width() / 4) * -1)) {
-                slide_left = 1;
-                reset_gestures();
-            }
-        } else {
-            //input_buttons();
-            //reset_gestures();
-        }
     } else if (ev.type == touch_type && ev.code == touch_pos_y) {
         touch_y = ev.value;
-        if (old_y != 0)
-            diff_y += touch_y - old_y;
-
-        if (touch_y < (gr_fb_height() - gr_get_height(surface))) {
-            if (diff_y > ((gr_fb_height() - gr_get_height(surface)) / 4)) {
-                //下滑
-                //ev.code = KEY_DOWN;
-                //ev.type = EV_KEY;
-                //reset_gestures();
-            } else if (diff_y < ((gr_fb_height() - gr_get_height(surface)) / 4) * -1) {
-                //上滑
-                //ev.code = KEY_UP;
-                //ev.type = EV_KEY;
-                //reset_gestures();
-      }
-        } else {
-                //input_buttons();
-                //reset_gestures();
-        }
     }
 
     if (ev.type != EV_KEY || ev.code > KEY_MAX)
@@ -714,16 +695,17 @@ void ui_init(void)
     gr_surface surface = gVirtualKeys;
 
     text_col = text_row = 0;
-    text_rows = gr_fb_height() / (CHAR_HEIGHT * 2);
-    max_menu_rows = text_rows - MIN_LOG_ROWS;
+    text_rows = gr_fb_height() / EXT_HEIGHT;
+    //max_menu_rows = text_rows - MIN_LOG_ROWS;
 #ifdef BOARD_TOUCH_RECOVERY
     max_menu_rows = get_max_menu_rows(max_menu_rows);
 #endif
-    if (max_menu_rows > MENU_MAX_ROWS)
-        max_menu_rows = MENU_MAX_ROWS;
+    //if (max_menu_rows > MENU_MAX_ROWS)
+    //    max_menu_rows = MENU_MAX_ROWS;
+    max_menu_rows = 13;
     if (text_rows > MAX_ROWS) text_rows = MAX_ROWS;
 
-    text_rows = text_rows - (gr_get_height(surface) / (CHAR_HEIGHT*2)) -1;
+    text_rows = text_rows - (gr_get_height(surface) / EXT_HEIGHT) -1;
 
     text_top = 1;
 

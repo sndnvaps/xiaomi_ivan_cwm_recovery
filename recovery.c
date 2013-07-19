@@ -856,7 +856,7 @@ main(int argc, char **argv) {
 
     device_ui_init(&ui_parameters);
     ui_init();
-    ui_print("自豪地使用CWM源码");
+    ui_print("自豪地使用CWM源码\n");
     load_volume_table();
     process_volumes();
     LOGI("Processing arguments.\n");

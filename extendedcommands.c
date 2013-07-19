@@ -329,11 +329,6 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
 // pass in NULL for fileExtensionOrDirectory and you will get a directory chooser
 char* choose_file_menu(const char* directory, const char* fileExtensionOrDirectory, const char* headers[])
 {
-    //let's clean the crowded screen.
-    int clean_rows;
-    for (clean_rows = 0; clean_rows <= 15; clean_rows++) {
-        ui_print("\n");
-    }
     char path[PATH_MAX] = "";
     DIR *dir;
     struct dirent *de;
