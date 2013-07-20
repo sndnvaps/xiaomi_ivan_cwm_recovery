@@ -614,7 +614,7 @@ static int input_callback(int fd, short revents, void *data)
                     //Touching menu item found.
                     menu_sel = menu_item_current;
                     ev.code = KEY_POWER;
-                    update_screen_locked();
+                    //update_screen_locked();
                     break;
                 }
             }
