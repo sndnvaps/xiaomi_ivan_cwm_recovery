@@ -1599,7 +1599,7 @@ void show_advanced_menu()
         if (!can_partition("/emmc")) {
             list[9] = NULL;
         }
-
+/*
         if (is_dualsystem()) {
             char bootmode[13];
             getBootmode(&bootmode);
@@ -1610,8 +1610,17 @@ void show_advanced_menu()
             else
                 list[10]=NULL;
 
-            if(isTrueDualbootEnabled()) list[11] = "关闭 双系统共存";
-            else list[11] = "打开 双系统共存";
+            if(isTrueDualbootEnabled()) 
+                list[11] = "关闭 双系统共存";
+            else 
+                list[11] = "打开 双系统共存";
+        }
+*/
+        if (is_dualsystem()) {
+            if(isTrueDualbootEnabled())
+                list[10] = "关闭 双系统共存";
+            else
+                list[10] = "打开 双系统共存";
         }
         int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
         if (chosen_item == GO_BACK)
@@ -1695,14 +1704,14 @@ void show_advanced_menu()
             case 9:
                 partition_sdcard("/emmc");
                 break;
-            case 10:
+/*            case 10:
                 system = select_system("选择启动系统:");
                 if(system==DUALBOOT_ITEM_SYSTEM0)
                     setBootmode("boot-system0");
                 else if(system==DUALBOOT_ITEM_SYSTEM1)
                     setBootmode("boot-system1");
-                break;
-            case 11:
+                break;*/
+            case 10:
                 enableTrueDualboot(!isTrueDualbootEnabled());
                 break;
         }
