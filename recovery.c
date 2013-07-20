@@ -73,7 +73,7 @@ static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
 static const char *SIDELOAD_TEMP_DIR = "/tmp/sideload";
 
 extern UIParameters ui_parameters;    // from ui.c
-
+int reboot_mode = -1;
 /*
  * The recovery tool communicates with the main system through /cache files.
  *   /cache/recovery/command - INPUT - command line for tool, one arg per line
@@ -709,7 +709,8 @@ prompt_and_wait() {
         int status;
         switch (chosen_item) {
             case ITEM_REBOOT:
-                poweroff=0;
+                ui_root_menu = 1; // Hide the "back" item by setting it to root menu.
+                show_reboot_menu();
                 return;
 
             case ITEM_WIPE_DATA:
@@ -1022,7 +1023,22 @@ main(int argc, char **argv) {
     sync();
     if(!poweroff) {
         ui_print("正在重启...\n");
-        android_reboot(ANDROID_RB_RESTART, 0, 0);
+        //android_reboot(ANDROID_RB_RESTART, 0, 0);
+        switch (reboot_mode)
+        {
+            case 0:
+                android_reboot(ANDROID_RB_RESTART, 0, 0);
+            case 1:
+                setBootmode("boot-system0");
+                android_reboot(ANDROID_RB_RESTART, 0, 0);
+            case 2:
+                setBootmode("boot-system1");
+                android_reboot(ANDROID_RB_RESTART, 0, 0);
+            case 3:
+                android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
+            case 4:
+                android_reboot(ANDROID_RB_RESTART2, 0, "bootloader");
+        }
     }
     else {
         ui_print("正在关机...\n");
@@ -1054,4 +1070,34 @@ int enable_key_backlight() {
 
 int get_allow_toggle_display() {
     return allow_display_toggle;
+}
+void show_reboot_menu() {
+    poweroff = 0;
+    static char* headers[] = {  "重启选项",
+                                "",
+                                NULL
+    };
+    
+    char* reboot_menu_items[] = {   NULL,
+                                    "系统一",
+                                    "系统二",
+                                    "Recovery",
+                                    "Fastboot",
+                                    NULL };
+    char bootmode[13];
+    getBootmode(&bootmode);
+    if (strcmp(bootmode, "boot-system0")==0) {
+        reboot_menu_items[0] = "当前系统: 1";
+    } else if (strcmp(bootmode, "boot-system1")==0) {
+        reboot_menu_items[0] = "当前系统: 2";
+    } else {
+        reboot_menu_items[0] = "当前系统: 1";
+    }
+    int chosen_item = get_menu_selection(headers, reboot_menu_items, 0, 0);
+    if (chosen_item != GO_BACK) {
+        reboot_mode = chosen_item;
+    } else {
+        reboot_mode = -1;
+    }
+
 }

@@ -37,4 +37,3 @@ t
 60
 w
 EOF
-reboot

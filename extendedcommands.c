@@ -1575,8 +1575,7 @@ void show_advanced_menu()
 
     for (;;)
     {
-        char* list[] = { "重启Recovery",
-                         "清空虚拟机缓存",
+        char* list[] = { "清空虚拟机缓存",
                          "报告错误",
                          "按键测试",
                          "查看日志",
@@ -1584,44 +1583,27 @@ void show_advanced_menu()
                          "SD卡分区",
                          "外置SD卡分区",
                          "内置SD卡分区",
-                         "当前系统: ",
-                         NULL,
-                         "调整系统分区大小",
+                         "双系统选项",
                          NULL
         };
 
         if (!can_partition("/sdcard")) {
-            list[6] = NULL;
+            list[5] = NULL;
         }
         if (!can_partition("/external_sd")) {
-            list[7] = NULL;
+            list[6] = NULL;
         }
         if (!can_partition("/emmc")) {
-            list[8] = NULL;
+            list[7] = NULL;
         }
 
-        if (is_dualsystem()) {
-            char bootmode[13];
-            getBootmode(&bootmode);
-            if(strcmp(bootmode, "boot-system0")==0)
-                list[9]="当前系统: 1";
-            else if(strcmp(bootmode, "boot-system1")==0)
-                list[9]="当前系统: 2";
-            else
-                list[9]="当前系统: 1";
 
-            if(isTrueDualbootEnabled()) list[10] = "关闭 双系统共存";
-            else list[10] = "打开 双系统共存";
-        }
         int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
         if (chosen_item == GO_BACK)
             break;
         switch (chosen_item)
         {
             case 0:
-                android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
-                break;
-            case 1:
                 if(is_dualsystem() && isTrueDualbootEnabled()) {
                     int system = select_system("选择系统清空:");
                     if (system>=0) {
@@ -1645,10 +1627,10 @@ void show_advanced_menu()
                 }
                 ensure_path_unmounted("/data");
                 break;
-            case 2:
+            case 1:
                 handle_failure(1);
                 break;
-            case 3:
+            case 2:
             {
                 ui_print("输出键值.\n");
                 ui_print("返回键终止调试.\n");
@@ -1663,10 +1645,10 @@ void show_advanced_menu()
                 while (action != GO_BACK);
                 break;
             }
-            case 4:
+            case 3:
                 ui_printlogtail(12);
                 break;
-            case 5:
+            case 4:
                 if(is_dualsystem()) {
                     int system = select_system("选择系统修复权限:");
                     if (system>=0) {
@@ -1683,27 +1665,17 @@ void show_advanced_menu()
                 __system("fix_permissions");
                 ui_print("完成!\n");
                 break;
-            case 6:
+            case 5:
                 partition_sdcard("/sdcard");
                 break;
-            case 7:
+            case 6:
                 partition_sdcard("/external_sd");
                 break;
-            case 8:
+            case 7:
                 partition_sdcard("/emmc");
                 break;
-            case 9:
-                system = select_system("选择启动系统:");
-                if(system==DUALBOOT_ITEM_SYSTEM0)
-                    setBootmode("boot-system0");
-                else if(system==DUALBOOT_ITEM_SYSTEM1)
-                    setBootmode("boot-system1");
-                break;
-            case 10:
-                enableTrueDualboot(!isTrueDualbootEnabled());
-                break;
-            case 11:
-                partition_system();
+            case 8:
+                dualsystem_options();
                 break;
         }
     }
@@ -2021,7 +1993,7 @@ int isTrueDualbootEnabled() {
 int enableTrueDualboot(int enable) {
     char confirm[PATH_MAX];
     ui_setMenuTextColor(MENU_TEXT_COLOR_RED);
-    sprintf(confirm, "是的 - %s 真正双系统", enable?"启用":"禁用");
+    sprintf(confirm, "是的 - %s 双系统共存", enable?"打开":"关闭");
 
     if (confirm_selection("将清空所有数据", confirm)) {
         // unmount /data
@@ -2068,7 +2040,7 @@ int enableTrueDualboot(int enable) {
 
 void partition_system() {
     char confirm[PATH_MAX];
-    char* headers[] = { "系统分区大小", "", NULL };
+    char* headers[] = { "双系统分区大小", "", NULL };
     char* items[] = { "300M",
                       "400M",
                       "500M",
@@ -2088,19 +2060,62 @@ void partition_system() {
             {
                 case 0:
                     __system("/sbin/sh /res/partition/systempart_300.sh");
-                    break;
                 case 1:
                     __system("/sbin/sh /res/partition/systempart_400.sh");
-                    break;
                 case 2:
                     __system("/sbin/sh /res/partition/systempart_500.sh");
-                    break;
             }
             ui_print("完成.\n");
+            android_reboot(ANDROID_RB_RESTART2, 0, "bootloader");
         }
         else {
             break;
         }
     }
     ui_setMenuTextColor(MENU_TEXT_COLOR);
+}
+void dualsystem_options() {
+    int system;
+    for (;;)
+    {
+        char* headers[] = { "双系统选项","",NULL };
+        char* items[] = { NULL,
+                          NULL,
+                          "调整双系统分区大小",
+                          NULL
+        };
+        if (is_dualsystem()) {
+            char bootmode[13];
+            getBootmode(&bootmode);
+            if(strcmp(bootmode, "boot-system0")==0)
+                items[0]="当前系统: 1";
+            else if(strcmp(bootmode, "boot-system1")==0)
+                items[0]="当前系统: 2";
+            else
+                items[0]="当前系统: 1";
+
+            if(isTrueDualbootEnabled()) items[1] = "关闭 双系统共存";
+            else items[1] = "打开 双系统共存";
+        }
+        int chosen_item = get_filtered_menu_selection(headers, items, 0, 0, sizeof(items) / sizeof(char*));
+        if (chosen_item == GO_BACK) {
+            break;
+        }
+        switch (chosen_item)
+        {
+            case 0:
+                system = select_system("选择启动系统:");
+                if(system==DUALBOOT_ITEM_SYSTEM0)
+                    setBootmode("boot-system0");
+                else if(system==DUALBOOT_ITEM_SYSTEM1)
+                    setBootmode("boot-system1");
+                break;
+            case 1:
+                enableTrueDualboot(!isTrueDualbootEnabled());
+                break;
+            case 2:
+                partition_system();
+                break;
+        }
+    }
 }
