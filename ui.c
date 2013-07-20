@@ -334,18 +334,17 @@ static void draw_screen_locked(void)
             if (now == NULL) { // just in case
                 sprintf(batt_text, "[%d%%]", batt_level);
             }
-
             gr_color(MENU_TEXT_COLOR);
             draw_text_line(0, batt_text, RIGHT_ALIGN);
-            /* gr_fill(0, (menu_top + menu_sel - menu_show_start + MENU_OFFSET + 1) * EXT_HEIGHT+EXT_HEIGHT/4,
-                        gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+1); */
+            gr_color(MENU_TEXT_COLOR);
+            /*gr_fill(0, (menu_top + menu_sel - menu_show_start + MENU_OFFSET) * EXT_HEIGHT+EXT_HEIGHT/4+4,
+                        gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+5);*/
 
             gr_color(HEADER_TEXT_COLOR);
             for (i = 0; i < menu_top; ++i) {
                 draw_text_line(i, menu[i], LEFT_ALIGN);
                 row++;
             }
-
             if (menu_items - menu_show_start + menu_top >= max_menu_rows)
                 j = max_menu_rows - menu_top;
             else
@@ -368,6 +367,9 @@ static void draw_screen_locked(void)
 
             gr_fill(0, (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2-1,
                         gr_fb_width(), (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2+1);
+            if (menu_items > max_menu_rows) {
+                   draw_text_line(total_rows - MAX_ROWS,"菜单键向下翻页,Home键向上翻页",LEFT_ALIGN);
+            }
 #else
 
             if (menu_items <= max_menu_rows)
