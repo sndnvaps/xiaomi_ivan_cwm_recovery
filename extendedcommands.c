@@ -2052,7 +2052,7 @@ void partition_system() {
             break;
         }
         sprintf(confirm,"是的 - 调整,调整后请进入fastboot");
-        if(confirm_selection("危险操作,确认?",confirm)) {
+        if(confirm_selection("危险操作,小白请自觉离开!",confirm)) {
             //Repartition system
             ui_print("正在调整系统分区……\n");
             ui_print("调整后请进入fastboot手动刷入recovery!\n");
@@ -2081,7 +2081,7 @@ void dualsystem_options() {
         char* headers[] = { "双系统选项","",NULL };
         char* items[] = { NULL,
                           NULL,
-                          "调整双系统分区大小",
+                          "调整双系统分区大小(仅高级用户)",
                           NULL
         };
         if (is_dualsystem()) {

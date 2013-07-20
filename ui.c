@@ -587,8 +587,6 @@ static int input_callback(int fd, short revents, void *data)
                 //MENU KEY slides down
                 if (menu_show_start + max_menu_rows + MENU_OFFSET < menu_items) {
                     menu_show_start = menu_show_start + max_menu_rows + MENU_OFFSET;
-                } else if (menu_items > max_menu_rows + MENU_OFFSET) {
-                    menu_show_start = menu_items - (max_menu_rows + MENU_OFFSET);
                 }
                 update_screen_locked();
                 reset_gestures();
