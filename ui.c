@@ -592,6 +592,9 @@ static int input_callback(int fd, short revents, void *data)
                 if (menu_show_start + max_menu_rows + MENU_OFFSET < menu_items) {
                     menu_show_start = menu_show_start + max_menu_rows + MENU_OFFSET;
                 }
+                if (menu_show_start > menu_items - max_menu_rows - MENU_OFFSET) {
+                    menu_show_start = menu_items - max_menu_rows - MENU_OFFSET;
+                }
                 update_screen_locked();
                 reset_gestures();
             } else if (touch_x > gr_fb_width() / 3 && touch_x < gr_fb_width() / 3 * 2) {
@@ -617,6 +620,7 @@ static int input_callback(int fd, short revents, void *data)
                         //Touching menu item found.
                         menu_sel = menu_item_current;
                         ev.code = KEY_POWER;
+                        //NOTE: Do not update!It can cause crash!
                         //update_screen_locked();
                         reset_gestures();
                         break;
@@ -633,6 +637,7 @@ static int input_callback(int fd, short revents, void *data)
                     //slide down!
                     slide_num = diff_y / (gr_fb_height() / max_menu_rows);
                     if (slide_num > 1) {
+                        //Too much!This can't be sliding.
                         reset_gestures();
                     } else {
                         menu_show_start -= slide_num;
@@ -646,11 +651,12 @@ static int input_callback(int fd, short revents, void *data)
                     //slide up!
                     slide_num = diff_y / (gr_fb_height() / max_menu_rows);
                     if (slide_num < -1) {
+                        //Too much!This can't be sliding.
                         reset_gestures();
                     } else {
                         menu_show_start -= slide_num;
-                        if (menu_show_start > menu_items) {
-                            menu_show_start = menu_items;
+                        if (menu_show_start > menu_items - max_menu_rows - MENU_OFFSET) {
+                            menu_show_start = menu_items - max_menu_rows - MENU_OFFSET;
                         }
                         reset_gestures();
                         update_screen_locked();
