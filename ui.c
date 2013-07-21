@@ -368,7 +368,7 @@ static void draw_screen_locked(void)
             gr_fill(0, (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2-1,
                         gr_fb_width(), (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2+1);
             if (menu_items > max_menu_rows) {
-                   draw_text_line(total_rows - MAX_ROWS,"菜单键向下翻页,Home键向上翻页",LEFT_ALIGN);
+                   draw_text_line(total_rows - MAX_ROWS,"屏幕右侧上下滑动翻页",LEFT_ALIGN);
             }
 #else
 
@@ -475,8 +475,8 @@ static void *progress_thread(void *cookie)
 /* The following code are based on code from Shendu Recovery.
  * We added touch recovery feature to it.
  * So now it's CWM Touch Recovery.
- * Code by Shendu && PeterCxy.
- * From CHINA.
+ * Thanks guys on github.
+ * Modified by Mirom Team.
  */
 
 static int rel_sum = 0;
@@ -490,6 +490,8 @@ static int old_x = 0;           //X position of last touch
 static int old_y = 0;           //Y position of last touch
 static int diff_x = 0;          //The difference Y position
 static int diff_y = 0;          //The difference X position
+static int old_x_2 = 0;         //Use for scrolling
+static int old_y_2 = 0;         //Use for scrolling
 
 /**
  *  Reset the records.
@@ -497,8 +499,8 @@ static int diff_y = 0;          //The difference X position
 static void reset_gestures() {
     diff_x = 0;
     diff_y = 0;
-    //old_x = 0;
-    //old_y = 0;
+    old_x_2 = 0;
+    old_y_2 = 0;
     touch_x = 0;
     touch_y = 0;
 }
@@ -607,21 +609,58 @@ static int input_callback(int fd, short revents, void *data)
                 reset_gestures();
             }
         } else {
-            //Find the touching menu item.
-            int menu_item_current;
-            for (menu_item_current = menu_show_start; menu_item_current < menu_items; menu_item_current++) {
-                if (touch_y >= (menu_top + menu_item_current - menu_show_start + MENU_OFFSET) * EXT_HEIGHT+EXT_HEIGHT/4 && touch_y <= (menu_top + menu_item_current - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+1) {
-                    //Touching menu item found.
-                    menu_sel = menu_item_current;
-                    ev.code = KEY_POWER;
-                    //update_screen_locked();
-                    break;
+            if (touch_x <= 0.6 * gr_fb_width()) {
+                //Find the touching menu item.
+                int menu_item_current;
+                for (menu_item_current = menu_show_start; menu_item_current < menu_items; menu_item_current++) {
+                    if (touch_y >= (menu_top + menu_item_current - menu_show_start + MENU_OFFSET) * EXT_HEIGHT+EXT_HEIGHT/4 && touch_y <= (menu_top + menu_item_current - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+1) {
+                        //Touching menu item found.
+                        menu_sel = menu_item_current;
+                        ev.code = KEY_POWER;
+                        //update_screen_locked();
+                        reset_gestures();
+                        break;
+                    }
+                }
+            } else if (menu_items > max_menu_rows) {
+                //Let's scroll!
+                int slide_num;
+                if (old_y_2 != 0) {
+                    diff_y += touch_y - old_y_2;
+                }
+                old_y_2 = touch_y;
+                if (diff_y > 100) {
+                    //slide down!
+                    slide_num = diff_y / (gr_fb_height() / max_menu_rows);
+                    if (slide_num > 1) {
+                        reset_gestures();
+                    } else {
+                        menu_show_start -= slide_num;
+                        if (menu_show_start < 0) {
+                            menu_show_start = 0;
+                        }
+                        reset_gestures();
+                        update_screen_locked();
+                    }
+                } else if (diff_y < -100) {
+                    //slide up!
+                    slide_num = diff_y / (gr_fb_height() / max_menu_rows);
+                    if (slide_num < -1) {
+                        reset_gestures();
+                    } else {
+                        menu_show_start -= slide_num;
+                        if (menu_show_start > menu_items) {
+                            menu_show_start = menu_items;
+                        }
+                        reset_gestures();
+                        update_screen_locked();
+                    }
                 }
             }
             fake_key = 1;
             ev.value = 1;
             in_touch = 0;
-            reset_gestures();
+            
         }
     }  else if (ev.type == touch_type && ev.code == touch_pos_x) {
         touch_x = ev.value;
