@@ -709,9 +709,13 @@ prompt_and_wait() {
         int status;
         switch (chosen_item) {
             case ITEM_REBOOT:
-                if (is_dualsystem()) reboot_multi_system();
-                poweroff=0;
-                return;
+                if (is_dualsystem()) {
+                    reboot_multi_system();
+                    break;
+                }else{
+                    poweroff=0;
+                    return;
+                }
             case ITEM_WIPE_DATA:
                 wipe_data(ui_text_visible());
                 if (!ui_text_visible()) return;
@@ -1034,11 +1038,16 @@ int get_allow_toggle_display() {
 }
 
 void reboot_multi_system() {
+	verify_root_and_recovery(DUALBOOT_ITEM_SYSTEM0);
+    if(is_dualsystem()) verify_root_and_recovery(DUALBOOT_ITEM_SYSTEM1);
     static char** title_headers = NULL;
     char bootmode[13];
     getBootmode(&bootmode);
     if (title_headers == NULL) {
-        char* headers[] = { "随意切换系统将",
+        char* headers[] = { "选择你要进入的系统",
+                            "没有开启双系统共存",
+                            "或者没有清空数据",
+                            "随意切换系统将",
                             "可能无法进入系统",
                             "",
                             NULL };
@@ -1058,11 +1067,17 @@ void reboot_multi_system() {
 
         switch (chosen_item) {
             case 0:
+                poweroff=0;
                 setBootmode("boot-system0");
-                return;
+                sync();
+                android_reboot(ANDROID_RB_RESTART, 0, 0);
+                //return;
             case 1:
+                poweroff=0;
                 setBootmode("boot-system1");
-                return;
+                sync();
+                android_reboot(ANDROID_RB_RESTART, 0, 0);
+                //return;
             default :
                 return;
         }
