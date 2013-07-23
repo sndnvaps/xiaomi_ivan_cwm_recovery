@@ -1065,12 +1065,16 @@ void reboot_multi_system() {
 
         switch (chosen_item) {
             case 0:
+                verify_root_and_recovery(DUALBOOT_ITEM_SYSTEM0);
+                verify_root_and_recovery(DUALBOOT_ITEM_SYSTEM1);
                 poweroff=0;
                 setBootmode("boot-system0");
                 sync();
                 android_reboot(ANDROID_RB_RESTART, 0, 0);
                 //return;
             case 1:
+                verify_root_and_recovery(DUALBOOT_ITEM_SYSTEM0);
+                verify_root_and_recovery(DUALBOOT_ITEM_SYSTEM1);
                 poweroff=0;
                 setBootmode("boot-system1");
                 sync();
