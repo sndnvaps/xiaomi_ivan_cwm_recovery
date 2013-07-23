@@ -1038,8 +1038,6 @@ int get_allow_toggle_display() {
 }
 
 void reboot_multi_system() {
-	verify_root_and_recovery(DUALBOOT_ITEM_SYSTEM0);
-    if(is_dualsystem()) verify_root_and_recovery(DUALBOOT_ITEM_SYSTEM1);
     static char** title_headers = NULL;
     char bootmode[13];
     getBootmode(&bootmode);
