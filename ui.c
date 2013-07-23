@@ -84,15 +84,15 @@ static int boardEnableKeyRepeat = 0;
 static int boardRepeatableKeys[64], boardNumRepeatableKeys = 0;
 
 static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
-    { &gBackgroundIcon[BACKGROUND_ICON_INSTALLING], "icon_installing" },
-    { &gBackgroundIcon[BACKGROUND_ICON_ERROR],      "icon_error" },
-    { &gBackgroundIcon[BACKGROUND_ICON_CLOCKWORK],  "icon_mi" },
-    { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_INSTALLING], "icon_firmware_install" },
-    { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_ERROR], "icon_firmware_error" },
+    { &gBackgroundIcon[BACKGROUND_ICON_INSTALLING], "null" },
+    { &gBackgroundIcon[BACKGROUND_ICON_ERROR],      "null" },
+    { &gBackgroundIcon[BACKGROUND_ICON_CLOCKWORK],  "null" },
+    { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_INSTALLING], "null" },
+    { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_ERROR], "null" },
     { &gProgressBarEmpty,               "progress_empty" },
     { &gProgressBarFill,                "progress_fill" },
     { &gVirtualKeys,                    "virtual_keys" },
-    { &gBackground,                "stitch" },
+    { &gBackground,                "touch_bg" },
     { NULL,                             NULL },
 };
 
@@ -252,17 +252,18 @@ static void draw_virtualkeys_locked() {
 #define CENTER_ALIGN 1
 #define RIGHT_ALIGN 2
 #define LEFT_ALIGN_MENU 3
-
+#define LEFT_ALIGN_MENU_TIP 4
 
 static void draw_text_line(int row, const char* t, int align) {
     int col = 0;
     if (t[0] != '\0') {
-        // int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
-        int length = strnlen(t, MENU_MAX_COLS) * 11.8;
+        //int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH * 2;
+        int length = strnlen(t, MENU_MAX_COLS) * 12;
         switch(align)
         {
              case LEFT_ALIGN:
              case LEFT_ALIGN_MENU:
+             case LEFT_ALIGN_MENU_TIP:
                 col = 1;
                 break;
             case CENTER_ALIGN:
@@ -273,8 +274,10 @@ static void draw_text_line(int row, const char* t, int align) {
                 break;
         }
         if (align == LEFT_ALIGN_MENU)
-            gr_text(col, (row+1)*EXT_HEIGHT-1, t);
-        else
+            gr_text(col, (row+1)*EXT_HEIGHT-1+CHAR_HEIGHT, t);
+        else if(align == LEFT_ALIGN_MENU_TIP)
+            gr_text(col, (row+1)*CHAR_HEIGHT-1+CHAR_HEIGHT, t);
+        else 
             gr_text(col, (row+1)*CHAR_HEIGHT-1, t);
     }
 }
@@ -353,10 +356,14 @@ static void draw_screen_locked(void)
             gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
             for (i = menu_show_start + menu_top; i < (menu_show_start + menu_top + j); ++i) {
                 if (i == menu_top + menu_sel) {
-                    gr_color(255, 255, 255, 255);
-                    draw_text_line(i - menu_show_start + MENU_OFFSET, menu[i], LEFT_ALIGN_MENU);
+                    // gr_color(255, 255, 255, 255);
+                    gr_color(255, 255, 255, 50);
+                    gr_fill(0, (menu_top + i - menu_show_start + MENU_OFFSET - 2) * EXT_HEIGHT+EXT_HEIGHT/4+7+CHAR_HEIGHT, gr_fb_width(), (menu_top + i - menu_show_start + 1 + MENU_OFFSET - 2)*EXT_HEIGHT+EXT_HEIGHT/4+4+CHAR_HEIGHT);
                     gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
+                    draw_text_line(i - menu_show_start + MENU_OFFSET, menu[i], LEFT_ALIGN_MENU);
                 } else {
+                    gr_color(0, 0, 0, 100);
+                    gr_fill(0, (menu_top + i - menu_show_start + MENU_OFFSET - 2) * EXT_HEIGHT+EXT_HEIGHT/4+7+CHAR_HEIGHT, gr_fb_width(), (menu_top + i - menu_show_start + 1 + MENU_OFFSET - 2)*EXT_HEIGHT+EXT_HEIGHT/4+4+CHAR_HEIGHT);
                     gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
                     draw_text_line(i - menu_show_start + MENU_OFFSET, menu[i], LEFT_ALIGN_MENU);
                 }
@@ -365,10 +372,10 @@ static void draw_screen_locked(void)
                     break;
             }
 
-            gr_fill(0, (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2-1,
-                        gr_fb_width(), (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2+1);
+            gr_fill(0, (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2-1+CHAR_HEIGHT,
+                        gr_fb_width(), (row + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/2+1+CHAR_HEIGHT);
             if (menu_items > max_menu_rows) {
-                   draw_text_line(total_rows - MAX_ROWS,"屏幕右侧上下滑动翻页",LEFT_ALIGN);
+                   draw_text_line(total_rows - MAX_ROWS,"屏幕右侧上下滑动翻页",LEFT_ALIGN_MENU_TIP);
             }
 #else
 
@@ -616,12 +623,16 @@ static int input_callback(int fd, short revents, void *data)
                 //Find the touching menu item.
                 int menu_item_current;
                 for (menu_item_current = menu_show_start; menu_item_current < menu_items; menu_item_current++) {
-                    if (touch_y >= (menu_top + menu_item_current - menu_show_start + MENU_OFFSET) * EXT_HEIGHT+EXT_HEIGHT/4 && touch_y <= (menu_top + menu_item_current - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+1) {
+                    if (touch_y >= (menu_top + menu_item_current - menu_show_start + MENU_OFFSET) * EXT_HEIGHT+EXT_HEIGHT/4+7+CHAR_HEIGHT && touch_y <= (menu_top + menu_item_current - menu_show_start + 1 + MENU_OFFSET)*EXT_HEIGHT+EXT_HEIGHT/4+4+CHAR_HEIGHT) {
                         //Touching menu item found.
-                        menu_sel = menu_item_current;
-                        ev.code = KEY_POWER;
-                        //NOTE: Do not update!It can cause crash!
-                        //update_screen_locked();
+                        if (menu_sel != menu_item_current) {
+                            //When first touch,set the active item.
+                            menu_sel = menu_item_current;
+                            update_screen_locked();
+                        } else {
+                            //Second touch,GO!
+                            ev.code = KEY_POWER;
+                        }
                         reset_gestures();
                         break;
                     }
