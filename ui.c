@@ -627,8 +627,9 @@ static int input_callback(int fd, short revents, void *data)
                         //Touching menu item found.
                         if (menu_sel != menu_item_current) {
                             //When first touch,set the active item.
-                            menu_sel = menu_item_current;
-                            update_screen_locked();
+                            menu_sel = menu_item_current - 1;
+                            ev.code = KEY_DOWN;
+                            //update_screen_locked();
                         } else {
                             //Second touch,GO!
                             ev.code = KEY_POWER;
