@@ -126,7 +126,6 @@ static unsigned long key_last_repeat[KEY_MAX + 1], key_press_time[KEY_MAX + 1];
 static volatile char key_pressed[KEY_MAX + 1];
 
 static void update_screen_locked(void);
-int get_batt_stats(void);
 
 #ifdef BOARD_TOUCH_RECOVERY
 #include "../../vendor/koush/recovery/touch.c"
@@ -227,28 +226,10 @@ static void draw_progress_locked()
     }
 }
 
-#define LEFT_ALIGN 0
-#define CENTER_ALIGN 1
-#define RIGHT_ALIGN 2
-
-static void draw_text_line(int row, const char* t, int align) {
-    int col = 0;
-    if (t[0] != '\0') {
-        int length = strnlen(t, MENU_MAX_COLS) * 16/*BOARD_RECOVERY_CHAR_WIDTH*/;
-        switch(align)
-        {
-            case LEFT_ALIGN:
-                col = 1;
-                break;
-            case CENTER_ALIGN:
-                col = ((gr_fb_width() - length) / 2);
-                break;
-            case RIGHT_ALIGN:
-                col = gr_fb_width() - length - 1;
-                break;
-        }
-        gr_text(col, (row+1)*CHAR_HEIGHT-1, t);
-    }
+static void draw_text_line(int row, const char* t) {
+  if (t[0] != '\0') {
+    gr_text(0, (row+1)*CHAR_HEIGHT-1, t);
+  }
 }
 
 static int menuTextColor[4] = {MENU_TEXT_COLOR};
@@ -280,34 +261,12 @@ static void draw_screen_locked(void)
         if (show_menu) {
 #ifndef BOARD_TOUCH_RECOVERY
             gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
-
-            int batt_level = 0;
-            batt_level = get_batt_stats();
-            if (batt_level < 20) {
-                gr_color(255, 0, 0, 255);
-            }
-
-            struct tm *current;
-            time_t now;
-            now = time(NULL) + (3600 * 8); // add 8 hours
-            current = localtime(&now);
-
-            char batt_text[40];
-            sprintf(batt_text, "电量%d%% 时间%02D:%02D", batt_level, current->tm_hour, current->tm_min);
-
-            if (now == NULL) { // just in case
-                sprintf(batt_text, "[电量%d%%]", batt_level);
-            }
-
-            gr_color(MENU_TEXT_COLOR);
-			draw_text_line(1, batt_text, RIGHT_ALIGN);
-
             gr_fill(0, (menu_top + menu_sel - menu_show_start) * CHAR_HEIGHT,
                     gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*CHAR_HEIGHT+1);
 
             gr_color(HEADER_TEXT_COLOR);
             for (i = 0; i < menu_top; ++i) {
-                draw_text_line(i, menu[i], LEFT_ALIGN);
+                draw_text_line(i, menu[i]);
                 row++;
             }
 
@@ -320,11 +279,11 @@ static void draw_screen_locked(void)
             for (i = menu_show_start + menu_top; i < (menu_show_start + menu_top + j); ++i) {
                 if (i == menu_top + menu_sel) {
                     gr_color(255, 255, 255, 255);
-                    draw_text_line(i - menu_show_start , menu[i], LEFT_ALIGN);
+                    draw_text_line(i - menu_show_start , menu[i]);
                     gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
                 } else {
                     gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
-                    draw_text_line(i - menu_show_start, menu[i], LEFT_ALIGN);
+                    draw_text_line(i - menu_show_start, menu[i]);
                 }
                 row++;
                 if (row >= max_menu_rows)
@@ -349,7 +308,7 @@ static void draw_screen_locked(void)
 
         int r;
         for (r = 0; r < (available_rows < MAX_ROWS ? available_rows : MAX_ROWS); r++) {
-            draw_text_line(start_row + r, text[(cur_row + r) % MAX_ROWS], LEFT_ALIGN);
+            draw_text_line(start_row + r, text[(cur_row + r) % MAX_ROWS]);
         }
     }
 }
@@ -1097,30 +1056,3 @@ void ui_increment_frame() {
     gInstallingFrame =
         (gInstallingFrame + 1) % ui_parameters.installing_frames;
 }
-
-int get_batt_stats(void){
-
-    static int level = -1;
-    static time_t nextCheck = 0;
-    struct timeval currentTime;
-    gettimeofday(&currentTime, NULL);
-
-    if (currentTime.tv_sec > nextCheck) {
-        char value[4];
-        FILE * capacity = fopen("/sys/class/power_supply/battery/capacity","rt");
-        if (capacity)
-        {
-            fgets(value, 4, capacity);
-            fclose(capacity);
-            level = atoi(value);
-
-            if (level > 100)
-                level = 100;
-            if (level < 0)
-                level = 0;
-        }
-        nextCheck = currentTime.tv_sec + 30;
-    }
-    return level;
-}
-

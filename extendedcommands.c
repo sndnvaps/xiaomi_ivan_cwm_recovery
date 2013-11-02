@@ -1259,7 +1259,7 @@ void show_nandroid_advanced_restore_menu(const char* path)
             system = select_system("选择系统恢复:");
             if (system>=0) {
                 if(set_active_system(system)!=0) {
-                    LOGE("设置系统失败. 请重启.\n");
+                    LOGE("Failed setting system. Please REBOOT.\n");
                     return;
                 }
             }
