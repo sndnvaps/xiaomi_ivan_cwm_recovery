@@ -41,6 +41,7 @@
 #include "bmlutils/bmlutils.h"
 #include "cutils/android_reboot.h"
 
+#include "adb_install.h"
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
@@ -127,18 +128,20 @@ int install_zip(const char* packagefilepath)
 }
 
 #define ITEM_CHOOSE_ZIP       0
-#define ITEM_APPLY_SDCARD     1
-#define ITEM_SIG_CHECK        2
-#define ITEM_CHOOSE_ZIP_INT   3
+#define ITEM_APPLY_SIDELOAD   1
+#define ITEM_APPLY_UPDATE 2 // /sdcard/update.zip
+#define ITEM_SIG_CHECK        3
+#define ITEM_CHOOSE_ZIP_INT   4
 
 void show_install_update_menu()
 {
-    static char* headers[] = {  "Apply update from .zip file on SD card",
+    static char* headers[] = {  "Install update from zip file",
                                 "",
                                 NULL
     };
     
     char* install_menu_items[] = {  "choose zip from sdcard",
+                                    "install zip from sideload",
                                     "apply /sdcard/update.zip",
                                     "toggle signature verification",
                                     NULL,
@@ -147,11 +150,11 @@ void show_install_update_menu()
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc/";
-        install_menu_items[3] = "choose zip from internal sdcard";
+        install_menu_items[4] = "choose zip from internal sdcard";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd/";
-        install_menu_items[3] = "choose zip from external sdcard";
+        install_menu_items[4] = "choose zip from external sdcard";
     }
     
     for (;;)
@@ -162,7 +165,7 @@ void show_install_update_menu()
             case ITEM_SIG_CHECK:
                 toggle_signature_check();
                 break;
-            case ITEM_APPLY_SDCARD:
+            case ITEM_APPLY_UPDATE:
             {
                 if(is_dualsystem()) {
                     int system = select_system("Choose system to install zip:");
@@ -185,6 +188,17 @@ void show_install_update_menu()
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu("/sdcard/");
                 write_recovery_version();
+                break;
+            case ITEM_APPLY_SIDELOAD:
+                if(is_dualsystem()) {
+                    int system = select_system("Choose system to install zip:");
+                    if (system>=0) {
+                        if(set_active_system(system)!=0)
+                            ui_print("Failed setting system. Please REBOOT!\n");
+                        else apply_from_adb();
+                    }
+                }
+                else apply_from_adb();
                 break;
             case ITEM_CHOOSE_ZIP_INT:
                 if (other_sd != NULL)
@@ -1570,6 +1584,7 @@ void show_advanced_menu()
     for (;;)
     {
         char* list[] = { "reboot recovery",
+                         "reboot fastboot",
                          "wipe dalvik cache",
                          "report error",
                          "key test",
@@ -1584,27 +1599,27 @@ void show_advanced_menu()
         };
 
         if (!can_partition("/sdcard")) {
-            list[6] = NULL;
-        }
-        if (!can_partition("/external_sd")) {
             list[7] = NULL;
         }
-        if (!can_partition("/emmc")) {
+        if (!can_partition("/external_sd")) {
             list[8] = NULL;
+        }
+        if (!can_partition("/emmc")) {
+            list[9] = NULL;
         }
 
         if (is_dualsystem()) {
             char bootmode[13];
             getBootmode(&bootmode);
             if(strcmp(bootmode, "boot-system0")==0)
-                list[9]="active system: 1";
+                list[10]="active system: 1";
             else if(strcmp(bootmode, "boot-system1")==0)
-                list[9]="active system: 2";
+                list[10]="active system: 2";
             else
-                list[9]=NULL;
+                list[10]=NULL;
 
-            if(isTrueDualbootEnabled()) list[10] = "DISABLE TrueDualBoot";
-            else list[10] = "ENABLE TrueDualBoot";
+            if(isTrueDualbootEnabled()) list[11] = "DISABLE TrueDualBoot";
+            else list[11] = "ENABLE TrueDualBoot";
         }
         int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
         if (chosen_item == GO_BACK)
@@ -1615,6 +1630,9 @@ void show_advanced_menu()
                 android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
                 break;
             case 1:
+                android_reboot(ANDROID_RB_RESTART2, 0, "bootloader");
+                break;
+            case 2:
                 if(is_dualsystem() && isTrueDualbootEnabled()) {
                     int system = select_system("Choose system to wipe dalvik-cache:");
                     if (system>=0) {
@@ -1638,10 +1656,10 @@ void show_advanced_menu()
                 }
                 ensure_path_unmounted("/data");
                 break;
-            case 2:
+            case 3:
                 handle_failure(1);
                 break;
-            case 3:
+            case 4:
             {
                 ui_print("Outputting key codes.\n");
                 ui_print("Go back to end debugging.\n");
@@ -1656,10 +1674,10 @@ void show_advanced_menu()
                 while (action != GO_BACK);
                 break;
             }
-            case 4:
+            case 5:
                 ui_printlogtail(12);
                 break;
-            case 5:
+            case 6:
                 if(is_dualsystem()) {
                     int system = select_system("Choose system to fix permissions:");
                     if (system>=0) {
@@ -1676,23 +1694,23 @@ void show_advanced_menu()
                 __system("fix_permissions");
                 ui_print("Done!\n");
                 break;
-            case 6:
+            case 7:
                 partition_sdcard("/sdcard");
                 break;
-            case 7:
+            case 8:
                 partition_sdcard("/external_sd");
                 break;
-            case 8:
+            case 9:
                 partition_sdcard("/emmc");
                 break;
-            case 9:
+            case 10:
                 system = select_system("Set bootmode:");
                 if(system==DUALBOOT_ITEM_SYSTEM0)
                     setBootmode("boot-system0");
                 else if(system==DUALBOOT_ITEM_SYSTEM1)
                     setBootmode("boot-system1");
                 break;
-            case 10:
+            case 11:
                 enableTrueDualboot(!isTrueDualbootEnabled());
                 break;
         }
