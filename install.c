@@ -142,6 +142,72 @@ try_update_binary(const char *path, ZipArchive *zip) {
         return 1;
     }
 
+/* Make sure the update binary is compatible with this recovery
+     *
+     * We're building this against 4.4's (or above) bionic, which
+     * has a different property namespace structure. Old updaters
+     * don't know how to deal with it, so if we think we got one
+     * of those, force the use of a fallback compatible copy and
+     * hope for the best
+     *
+     * if "set_perm_" is found, it's probably a regular updater
+     * instead of a custom one. And if "set_metadata_" isn't there,
+     * it's pre-4.4, which makes it incompatible
+     *
+     * Also, I hate matching strings in binary blobs */
+
+    FILE *updaterfile = fopen(binary, "rb");
+    char tmpbuf;
+    char setpermmatch[9] = { 's','e','t','_','p','e','r','m','_' };
+    char setmetamatch[13] = { 's','e','t','_','m','e','t','a','d','a','t','a','_' };
+    size_t pos = 0;
+    bool foundsetperm = false;
+    bool foundsetmeta = false;
+
+    if (updaterfile == NULL) {
+        LOGE("Can't find %s for validation\n", ASSUMED_UPDATE_BINARY_NAME);
+        return 1;
+    }
+    fseek(updaterfile, 0, SEEK_SET);
+    while (!feof(updaterfile)) {
+        fread(&tmpbuf, 1, 1, updaterfile);
+        if (!foundsetperm && pos < sizeof(setpermmatch) && tmpbuf == setpermmatch[pos]) {
+            pos++;
+            if (pos == sizeof(setpermmatch)) {
+                foundsetperm = true;
+                pos = 0;
+            }
+            continue;
+        }
+        if (!foundsetmeta && tmpbuf == setmetamatch[pos]) {
+            pos++;
+            if (pos == sizeof(setmetamatch)) {
+                foundsetmeta = true;
+                pos = 0;
+            }
+            continue;
+        }
+        /* None of the match loops got a continuation, reset the counter */
+        pos = 0;
+    }
+    fclose(updaterfile);
+
+    /* Found set_perm and !set_metadata, overwrite the binary with the fallback */
+    if (foundsetperm && !foundsetmeta) {
+        FILE *fallbackupdater = fopen("/res/updater.fallback", "rb");
+        FILE *updaterfile = fopen(binary, "wb");
+        char updbuf[1024];
+
+        LOGW("Using fallback updater for downgrade...\n");
+        while (!feof(fallbackupdater)) {
+           fread(&updbuf, 1, 1024, fallbackupdater);
+           fwrite(&updbuf, 1, 1024, updaterfile);
+        }
+        chmod(binary, 0755);
+        fclose(updaterfile);
+        fclose(fallbackupdater);
+    }
+
     int pipefd[2];
     pipe(pipefd);
 
@@ -257,121 +323,45 @@ try_update_binary(const char *path, ZipArchive *zip) {
         mzCloseZipArchive(zip);
         return ret;
     }
+    mzCloseZipArchive(zip);
     return INSTALL_SUCCESS;
 }
 
-// Reads a file containing one or more public keys as produced by
-// DumpPublicKey:  this is an RSAPublicKey struct as it would appear
-// as a C source literal, eg:
-//
-//  "{64,0xc926ad21,{1795090719,...,-695002876},{-857949815,...,1175080310}}"
-//
-// For key versions newer than the original 2048-bit e=3 keys
-// supported by Android, the string is preceded by a version
-// identifier, eg:
-//
-//  "v2 {64,0xc926ad21,{1795090719,...,-695002876},{-857949815,...,1175080310}}"
-//
-// (Note that the braces and commas in this example are actual
-// characters the parser expects to find in the file; the ellipses
-// indicate more numbers omitted from this example.)
-//
-// The file may contain multiple keys in this format, separated by
-// commas.  The last key must not be followed by a comma.
-//
-// Returns NULL if the file failed to parse, or if it contain zero keys.
-static RSAPublicKey*
-load_keys(const char* filename, int* numKeys) {
-    RSAPublicKey* out = NULL;
-    *numKeys = 0;
 
-    FILE* f = fopen(filename, "r");
-    if (f == NULL) {
-        LOGE("opening %s: %s\n", filename, strerror(errno));
-        goto exit;
-    }
 
-    {
-        int i;
-        bool done = false;
-        while (!done) {
-            ++*numKeys;
-            out = (RSAPublicKey*)realloc(out, *numKeys * sizeof(RSAPublicKey));
-            RSAPublicKey* key = out + (*numKeys - 1);
-
-            char start_char;
-            if (fscanf(f, " %c", &start_char) != 1) goto exit;
-            if (start_char == '{') {
-                // a version 1 key has no version specifier.
-                key->exponent = 3;
-            } else if (start_char == 'v') {
-                int version;
-                if (fscanf(f, "%d {", &version) != 1) goto exit;
-                if (version == 2) {
-                    key->exponent = 65537;
-                } else {
-                    goto exit;
-                }
-            }
-
-            if (fscanf(f, " %i , 0x%x , { %u",
-                       &(key->len), &(key->n0inv), &(key->n[0])) != 3) {
-                goto exit;
-            }
-            if (key->len != RSANUMWORDS) {
-                LOGE("key length (%d) does not match expected size\n", key->len);
-                goto exit;
-            }
-            for (i = 1; i < key->len; ++i) {
-                if (fscanf(f, " , %u", &(key->n[i])) != 1) goto exit;
-            }
-            if (fscanf(f, " } , { %u", &(key->rr[0])) != 1) goto exit;
-            for (i = 1; i < key->len; ++i) {
-                if (fscanf(f, " , %u", &(key->rr[i])) != 1) goto exit;
-            }
-            fscanf(f, " } } ");
-
-            // if the line ends in a comma, this file has more keys.
-            switch (fgetc(f)) {
-            case ',':
-                // more keys to come.
-                break;
-
-            case EOF:
-                done = true;
-                break;
-
-            default:
-                LOGE("unexpected character between keys\n");
-                goto exit;
-            }
-
-            LOGI("read key e=%d\n", key->exponent);
-        }
-    }
-
-    fclose(f);
-    return out;
-
-exit:
-    if (f) fclose(f);
-    free(out);
-    *numKeys = 0;
-    return NULL;
-}
-
+   
 static int
 really_install_package(const char *path)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_print("查找安装包...\n");
     ui_show_indeterminate_progress();
-    LOGI("Update location: %s\n", path);
+
+// Resolve symlink in case legacy /sdcard path is used
+    // Requires: symlink uses absolute path
+    char new_path[PATH_MAX];
+    if (strlen(path) > 1) {
+        char *rest = strchr(path + 1, '/');
+        if (rest != NULL) {
+            int readlink_length;
+            int root_length = rest - path;
+            char *root = malloc(root_length + 1);
+            strncpy(root, path, root_length);
+            root[root_length] = 0;
+            readlink_length = readlink(root, new_path, PATH_MAX);
+            if (readlink_length > 0) {
+                strncpy(new_path + readlink_length, rest, PATH_MAX - readlink_length);
+                path = new_path;
+            }
+            free(root);
+    LOGI("刷机包位置: %s\n", path);
 
     if (ensure_path_mounted(path) != 0) {
         LOGE("Can't mount %s\n", path);
         return INSTALL_CORRUPT;
     }
+  }
+   }
 
     ui_print("打开安装包...\n");
 
@@ -379,7 +369,7 @@ really_install_package(const char *path)
 
     if (signature_check_enabled) {
         int numKeys;
-        RSAPublicKey* loadedKeys = load_keys(PUBLIC_KEYS_FILE, &numKeys);
+       Certificate* loadedKeys = load_keys(PUBLIC_KEYS_FILE, &numKeys);
         if (loadedKeys == NULL) {
             LOGE("Failed to load keys\n");
             return INSTALL_CORRUPT;

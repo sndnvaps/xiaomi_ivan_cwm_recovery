@@ -32,6 +32,7 @@
 #include "recovery_ui.h"
 
 #include "extendedcommands.h"
+#include "recovery_settings.h"
 #include "nandroid.h"
 #include "mounts.h"
 #include "flashutils/flashutils.h"
@@ -40,6 +41,8 @@
 #include "mtdutils/mtdutils.h"
 #include "bmlutils/bmlutils.h"
 #include "cutils/android_reboot.h"
+#include "mmcutils/mmcutils.h"
+#include "voldclient/voldclient.h"
 
 #include "adb_install.h"
 
@@ -98,8 +101,30 @@ void write_recovery_version() {
     write_string_to_file("/sdcard/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
 }
 
-void
-toggle_signature_check()
+static void write_last_install_path(const char* install_path) {
+    char path[PATH_MAX];
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_LAST_INSTALL_FILE);
+    write_string_to_file(path, install_path);
+}
+
+const char* read_last_install_path() {
+    static char path[PATH_MAX];
+    char tmp[PATH_MAX];
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_LAST_INSTALL_FILE);
+
+    ensure_path_mounted(path);
+    FILE *f = fopen(path, "r");
+    if (f != NULL) {
+        fgets(path, PATH_MAX, f);
+        fclose(f);
+
+	snprintf(tmp, PATH_MAX, "%s%s", path, "/");
+        return strdup(tmp);
+    }
+    return NULL;
+}
+
+void toggle_signature_check()
 {
     signature_check_enabled = !signature_check_enabled;
     ui_print("签名验证: %s\n", signature_check_enabled ? "开启" : "关闭");
@@ -122,6 +147,17 @@ int install_zip(const char* packagefilepath)
         ui_print("安装出错.\n");
         return 1;
     }
+#ifdef ENABLE_LOKI
+    if (loki_support_enabled) {
+        ui_print("Checking if loki-fying is needed\n");
+        status = loki_check();
+        if (status != INSTALL_SUCCESS) {
+            ui_set_background(BACKGROUND_ICON_ERROR);
+            return 1;
+        }
+    }
+#endif
+
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_print("\n安装完成.\n");
     return 0;
@@ -130,8 +166,9 @@ int install_zip(const char* packagefilepath)
 #define ITEM_CHOOSE_ZIP       0
 #define ITEM_APPLY_SIDELOAD   1
 #define ITEM_APPLY_UPDATE 2 // /sdcard/update.zip
-#define ITEM_SIG_CHECK        3
-#define ITEM_CHOOSE_ZIP_INT   4
+#define ITEM_SIG_CHECK        4
+#define ITEM_CHOOSE_ZIP_INT   5
+#define ITEM_CHOOSE_LAST_ZIP_FOLDER 3
 
 void show_install_update_menu()
 {
@@ -143,6 +180,7 @@ void show_install_update_menu()
     char* install_menu_items[] = {  "从SD卡选择zip",
                                     "从sideload安装zip",
                                     "安装 /sdcard/update.zip",
+				    "从上次的安装目录中安装zip",
                                     "签名验证选项",
                                     NULL,
                                     NULL };
@@ -150,11 +188,11 @@ void show_install_update_menu()
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc/";
-        install_menu_items[4] = "从内置SD卡选择zip";
+        install_menu_items[5] = "从内置SD卡选择zip";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd/";
-        install_menu_items[4] = "从外置SD卡选择zip";
+        install_menu_items[5] = "从外置SD卡选择zip";
     }
     
     for (;;)
@@ -189,6 +227,16 @@ void show_install_update_menu()
                 show_choose_zip_menu("/sdcard/");
                 write_recovery_version();
                 break;
+	    case ITEM_CHOOSE_LAST_ZIP_FOLDER:
+		{	//choose zip from the last install folder 
+		const char *last_path_used = read_last_install_path();
+		if (last_path_used == NULL) {
+			show_choose_zip_menu("/sdcard/");
+		} else {
+			show_choose_zip_menu(last_path_used);
+		}
+		break;
+              }
             case ITEM_APPLY_SIDELOAD:
                 if(is_dualsystem()) {
                     int system = select_system("选择系统安装:");
@@ -243,7 +291,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
         return NULL;
     }
 
-    int extension_length = 0;
+   unsigned int extension_length = 0;
     if (fileExtensionOrDirectory != NULL)
         extension_length = strlen(fileExtensionOrDirectory);
 
@@ -301,7 +349,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
     }
 
     if(closedir(dir) < 0) {
-        LOGE("Failed to close directory.");
+        LOGE("Failed to close directory.\n");
     }
 
     if (total==0) {
@@ -436,6 +484,7 @@ void show_choose_zip_menu(const char *mount_point)
                 sprintf(confirm, "是的 - 安装 %s 到 系统%d", basename(file), system);
                 if (confirm_selection("确认安装?", confirm))
                     install_zip(file);
+		    write_last_install_path(dirname(file));
             }
         }
     }
@@ -443,6 +492,7 @@ void show_choose_zip_menu(const char *mount_point)
         sprintf(confirm, "是的 - 安装 %s", basename(file));
         if (confirm_selection(confirm_install, confirm))
             install_zip(file);
+	    write_last_install_path(dirname(file));
     }
 }
 
@@ -804,12 +854,21 @@ int format_device(const char *device, const char *path, const char *fs_type) {
         reset_ext4fs_info();
         int result = make_ext4fs(device, length, v->mount_point, sehandle);
         if (result != 0) {
-            LOGE("format_volume: make_extf4fs failed on %s\n", device);
+            LOGE("format_volume: make_ext4fs failed on %s\n", device);
             return -1;
         }
         return 0;
     }
-
+#ifdef USE_F2FS
+    if (strcmp(fs_type, "f2fs") == 0) {
+        int result = make_f2fs_main(device, v->mount_point);
+        if (result != 0) {
+            LOGE("format_volume: mkfs.f2f2 failed on %s\n", device);
+            return -1;
+        }
+        return 0;
+    }
+#endif
     return format_unknown_device(device, path, fs_type);
 }
 
@@ -859,7 +918,7 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         return 0;
     }
 
-    static char tmp[PATH_MAX];
+    char tmp[PATH_MAX];
     if (strcmp(path, "/data") == 0) {
         sprintf(tmp, "cd /data ; for f in $(ls -a | grep -v ^media$); do rm -rf $f; done");
         __system(tmp);
@@ -1322,37 +1381,52 @@ static void run_dedupe_gc(const char* other_sd) {
 }
 
 static void choose_default_backup_format() {
-    static char* headers[] = {  "默认备份格式",
+    static const char* headers[] = {  "默认备份格式",
                                 "",
                                 NULL
     };
+ int fmt = nandroid_get_default_backup_format();
 
     char **list;
     char* list_tar_default[] = { "tar (默认)",
-        "dup",
-        NULL
-    };
+                                   "dup",
+                                 "tar + gzip",
+                                 NULL };
     char* list_dup_default[] = { "tar",
         "dup (默认)",
+        "tar + gzip",
         NULL
     };
+char* list_tgz_default[] = { "tar",
+                                 "dup",
+                                 "tar + gzip (default)",
+                                 NULL };
 
-    if (nandroid_get_default_backup_format() == NANDROID_BACKUP_FORMAT_DUP) {
+    if (fmt == NANDROID_BACKUP_FORMAT_DUP) {
         list = list_dup_default;
+    } else if (fmt == NANDROID_BACKUP_FORMAT_TGZ) {
+        list = list_tgz_default;
     } else {
         list = list_tar_default;
     }
 
+    char path[PATH_MAX];
+    snprintf(path, PATH_MAX, "%s%s", "/sdcard/", NANDROID_BACKUP_FORMAT_FILE);
     int chosen_item = get_menu_selection(headers, list, 0, 0);
     switch (chosen_item) {
         case 0:
-            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tar");
+            write_string_to_file(path, "tar");
             ui_print("默认备份格式设为 tar.\n");
             break;
         case 1:
-            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
+            write_string_to_file(path, "dup");
             ui_print("默认备份格式设为 dedupe.\n");
             break;
+        case 2: {
+            write_string_to_file(path, "tgz");
+            ui_print("Default backup format set to tar + gzip.\n");
+            break;
+        }
     }
 }
 

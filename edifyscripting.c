@@ -34,6 +34,7 @@
 
 #include <signal.h>
 #include <sys/wait.h>
+#include <libgen.h> // basename
 
 #include "bootloader.h"
 #include "common.h"
@@ -52,7 +53,9 @@
 #include "edify/expr.h"
 #include "mtdutils/mtdutils.h"
 #include "mmcutils/mmcutils.h"
-//#include "edify/parser.h"
+
+extern int yyparse();
+extern int yy_scan_bytes();
 
 Value* UIPrintFn(const char* name, State* state, int argc, Expr* argv[]) {
     char** args = ReadVarArgs(state, argc, argv);
@@ -153,7 +156,7 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
             free(path);
             return StringValue(strdup(""));
         }
-        if (0 != format_volume("/sdcard/.android_secure")) {
+      if (0 != format_volume(get_android_secure_path())) {
             free(path);
             return StringValue(strdup(""));
         }

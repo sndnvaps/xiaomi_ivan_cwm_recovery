@@ -31,6 +31,7 @@ extern int device_recovery_start();
 // keys are already pressed.  Return true if the text display should
 // be toggled.
 extern int device_toggle_display(volatile char* key_pressed, int key_code);
+int get_allow_toggle_display();
 
 // Called in the input thread when a new key (key_code) is pressed.
 // *key_pressed is an array of KEY_MAX+1 bytes indicating which other
@@ -65,6 +66,14 @@ extern int device_perform_action(int which);
 // are erased after this returns (whether it returns success or not).
 int device_wipe_data();
 
+// ui_wait_key() special return codes
+/*
+#define REBOOT              -1 // ui_wait_key() timeout to reboot
+#define CANCEL              -2 // ui_cancel_wait_key()
+*/
+#define REFRESH             -3
+
+// return actions by ui_handle_key() for get_menu_selection()
 #define NO_ACTION           -1
 
 #define HIGHLIGHT_UP        -2
@@ -95,11 +104,14 @@ extern char* MENU_ITEMS[];
 extern int ui_root_menu;
 
 int
-get_menu_selection(char** headers, char** items, int menu_only, int initial_selection);
+get_menu_selection(const char** headers, char** items, int menu_only, int initial_selection);
 
 void
 set_sdcard_update_bootloader_message();
 
 extern int ui_handle_key(int key, int visible);
+
+// call a clean reboot
+void reboot_main_system(int cmd, int flags, char *arg);
 
 #endif

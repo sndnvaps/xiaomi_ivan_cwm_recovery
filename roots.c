@@ -223,6 +223,25 @@ Volume* volume_for_path(const char* path) {
     return NULL;
 }
 
+static char* primary_storage_path = NULL;
+char* get_primary_storage_path() {
+    if (primary_storage_path == NULL) {
+        if (volume_for_path("/storage/sdcard0"))
+            primary_storage_path = "/storage/sdcard0";
+        else
+            primary_storage_path = "/sdcard";
+    }
+    return primary_storage_path;
+}
+
+static char* android_secure_path = NULL;
+char* get_android_secure_path() {
+    if (android_secure_path == NULL) {
+        android_secure_path = malloc(sizeof("/.android_secure") + strlen(get_primary_storage_path()) + 1);
+        sprintf(android_secure_path, "%s/.android_secure", primary_storage_path);
+    }
+    return android_secure_path;
+}
 int try_mount(const char* device, const char* mount_point, const char* fs_type, const char* fs_options) {
     if (device == NULL || mount_point == NULL || fs_type == NULL)
         return -1;
@@ -353,6 +372,7 @@ int is_data_media() {
 
 void setup_data_media() {
     int i;
+    char* mount_point = "/sdcard";
     for (i = 0; i < num_volumes; i++) {
         Volume* vol = device_volumes + i;
         if (strcmp(vol->fs_type, "datamedia") == 0) {
@@ -362,6 +382,9 @@ void setup_data_media() {
             return;
         }
     }
+    rmdir(mount_point);
+    mkdir("/data/media", 0755);
+    symlink("/data/media",mount_point);
 }
 
 int is_data_media_volume_path(const char* path) {
@@ -581,7 +604,7 @@ int ensure_path_unmounted(const char* path) {
 
 extern struct selabel_handle *sehandle;
 static int handle_data_media = 0;
-
+static int ignore_data_media = 0;
 int format_volume(const char* volume) {
     Volume* v = volume_for_path(volume);
     if (v == NULL) {
@@ -651,6 +674,17 @@ int format_volume(const char* volume) {
         }
         return 0;
     }
+#ifdef USE_F2FS
+    if (strcmp(v->fs_type, "f2fs") == 0) {
+        const char* args[] = { "mkfs.f2fs", v->device };
+        int result = make_f2fs_main(2, (char**)args);
+        if (result != 0) {
+            LOGE("format_volume: mkfs.f2fs failed on %s\n", v->blk_device);
+            return -1;
+        }
+        return 0;
+    }
+#endif
 
 #if 0
     LOGE("format_volume: fs_type \"%s\" unsupported\n", v->fs_type);
@@ -665,4 +699,17 @@ void handle_data_media_format(int handle) {
 
 void handle_truedualsystem_format(int handle) {
   handle_truedualsystem = handle;
+}
+
+void ignore_data_media_workaround(int ignore) {
+  ignore_data_media = ignore;
+}
+
+void setup_legacy_storage_paths() {
+    char* primary_path = get_primary_storage_path();
+
+    if (!is_data_media_volume_path(primary_path)) {
+        rmdir("/sdcard");
+        symlink(primary_path, "/sdcard");
+    }
 }

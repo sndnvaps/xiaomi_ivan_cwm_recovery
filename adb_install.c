@@ -152,6 +152,18 @@ apply_from_adb() {
         ui_print("安装出错.\n");
     }
 
+#ifdef ENABLE_LOKI
+    else if (loki_support_enabled) {
+        ui_print("Checking if loki-fying is needed");
+        install_status = loki_check();
+        if (install_status != INSTALL_SUCCESS)
+            ui_set_background(BACKGROUND_ICON_ERROR);
+    }
+#endif
+
+    if (install_status == INSTALL_SUCCESS)
+        ui_set_background(BACKGROUND_ICON_NONE);
+
     remove(ADB_SIDELOAD_FILENAME);
 
     return install_status;

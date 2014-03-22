@@ -20,6 +20,8 @@
 #include <signal.h>
 #include <sys/wait.h>
 
+#include "libcrecovery/common.h"
+
 #include "bootloader.h"
 #include "common.h"
 #include "cutils/properties.h"
@@ -33,13 +35,14 @@
 #include <sys/vfs.h>
 
 #include "extendedcommands.h"
+#include "recovery_settings.h"
 #include "nandroid.h"
 #include "mounts.h"
 
 #include "flashutils/flashutils.h"
 #include <libgen.h>
 
-void nandroid_generate_timestamp_path(const char* backup_path)
+void nandroid_generate_timestamp_path(char* backup_path)
 {
     time_t t = time(NULL);
     struct tm *tmp = localtime(&t);
@@ -57,12 +60,12 @@ void nandroid_generate_timestamp_path(const char* backup_path)
 
 static void ensure_directory(const char* dir) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "mkdir -p %s ; chmod 777 %s", dir, dir);
+    sprintf(tmp, "mkdir -p %s && chmod 777 %s", dir, dir);
     __system(tmp);
 }
 
 static int print_and_error(const char* message) {
-    ui_print("%s", message);
+    ui_print("%s\n", message);
     return 1;
 }
 
@@ -78,7 +81,7 @@ static void nandroid_callback(const char* filename)
     char tmp[PATH_MAX];
     strcpy(tmp, justfile);
     if (tmp[strlen(tmp) - 1] == '\n')
-        tmp[strlen(tmp) - 1] = NULL;
+        tmp[strlen(tmp) - 1] = '\0';
     tmp[ui_get_text_cols() - 1] = '\0';
     nandroid_files_count++;
     ui_increment_frame();
@@ -118,7 +121,7 @@ static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_fil
     }
 
     while (fgets(tmp, PATH_MAX, fp) != NULL) {
-        tmp[PATH_MAX - 1] = NULL;
+        tmp[PATH_MAX - 1] = '\0';
         if (callback)
             nandroid_callback(tmp);
     }
@@ -126,23 +129,40 @@ static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_fil
     return __pclose(fp);
 }
 
+static int do_tar_compress(char* command, int callback) {
+    char buf[PATH_MAX];
+
+    set_perf_mode(1);
+
+    FILE *fp = __popen(command, "r");
+    if (fp == NULL) {
+        ui_print("无法执行 tar.\n");
+        set_perf_mode(0);
+        return -1;
+    }
+
+    while (fgets(buf, PATH_MAX, fp) != NULL) {
+        buf[PATH_MAX - 1] = '\0';
+        if (callback)
+            nandroid_callback(buf);
+    }
+
+    set_perf_mode(0);
+    return __pclose(fp);
+}
+
 static int tar_compress_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
     char tmp[PATH_MAX];
     sprintf(tmp, "cd $(dirname %s) ; touch %s.tar ; (tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar.) 2> /proc/self/fd/1 ; exit $?", backup_path, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media() ? "--exclude 'media'" : "", backup_path, backup_file_image);
 
-    FILE *fp = __popen(tmp, "r");
-    if (fp == NULL) {
-        ui_print("无法执行 tar.\n");
-        return -1;
-    }
+    return do_tar_compress(tmp, callback);
+}
 
-    while (fgets(tmp, PATH_MAX, fp) != NULL) {
-        tmp[PATH_MAX - 1] = NULL;
-        if (callback)
-            nandroid_callback(tmp);
-    }
+static int tar_gzip_compress_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "cd $(dirname %s) ; touch %s.tar.gz ; (tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) | pigz -c | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar.gz.) 2> /proc/self/fd/1 ; exit $?", backup_path, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media() ? "--exclude 'media'" : "", backup_path, backup_file_image);
 
-    return __pclose(fp);
+    return do_tar_compress(tmp, callback);
 }
 
 static int tar_dump_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
@@ -192,12 +212,16 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
     }
 
     while (fgets(tmp, PATH_MAX, fp) != NULL) {
-        tmp[PATH_MAX - 1] = NULL;
+        tmp[PATH_MAX - 1] = '\0';
         if (callback)
             nandroid_callback(tmp);
     }
 
     return __pclose(fp);
+}
+
+static void build_configuration_path(char *path_buf, const char *file) {
+    sprintf(path_buf, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), file);
 }
 
 static nandroid_backup_handler default_backup_handler = tar_compress_wrapper;
@@ -211,8 +235,11 @@ static void refresh_default_backup_handler() {
         strcpy(fmt, forced_backup_format);
     }
     else {
-        ensure_path_mounted("/sdcard");
-        FILE* f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
+        char path[PATH_MAX];
+
+        build_configuration_path(path, NANDROID_BACKUP_FORMAT_FILE);
+        ensure_path_mounted(path);
+        FILE* f = fopen(path, "r");
         if (NULL == f) {
             default_backup_handler = tar_compress_wrapper;
             return;
@@ -220,9 +247,13 @@ static void refresh_default_backup_handler() {
         fread(fmt, 1, sizeof(fmt), f);
         fclose(f);
     }
-    fmt[3] = NULL;
+    fmt[3] = '\0';
     if (0 == strcmp(fmt, "dup"))
         default_backup_handler = dedupe_compress_wrapper;
+    else if (0 == strcmp(fmt, "tgz"))
+        default_backup_handler = tar_gzip_compress_wrapper;
+    else if (0 == strcmp(fmt, "tar"))
+        default_backup_handler = tar_compress_wrapper;
     else
         default_backup_handler = tar_compress_wrapper;
 }
@@ -231,6 +262,8 @@ unsigned nandroid_get_default_backup_format() {
     refresh_default_backup_handler();
     if (default_backup_handler == dedupe_compress_wrapper) {
         return NANDROID_BACKUP_FORMAT_DUP;
+    } else if (default_backup_handler == tar_gzip_compress_wrapper) {
+        return NANDROID_BACKUP_FORMAT_TGZ;
     } else {
         return NANDROID_BACKUP_FORMAT_TAR;
     }
@@ -242,7 +275,7 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
         ui_print("无法找到分区.\n");
         return NULL;
     }
-    MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
+    const MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
     if (mv == NULL) {
         ui_print("无法找到安装分区: %s\n", v->mount_point);
         return NULL;
@@ -255,8 +288,10 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
     if (strlen(forced_backup_format) > 0)
         return default_backup_handler;
 
-    // cwr5, we prefer dedupe for everything except yaffs2
-    if (strcmp("yaffs2", mv->filesystem) == 0) {
+    // Disable tar backups of yaffs2 by default
+    char prefer_tar[PROPERTY_VALUE_MAX];
+    property_get("ro.cwm.prefer_tar", prefer_tar, "false");
+    if (strcmp("yaffs2", mv->filesystem) == 0 && strcmp("false", prefer_tar) == 0) {
         return mkyaffs2image_wrapper;
     }
 
@@ -267,10 +302,13 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
 
     int ret = 0;
     char name[PATH_MAX];
+    char tmp[PATH_MAX];
     strcpy(name, basename(mount_point));
 
     struct stat file_info;
-    int callback = stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info) != 0;
+    build_configuration_path(tmp, NANDROID_HIDE_PROGRESS_FILE);
+    ensure_path_mounted(tmp);
+    int callback = stat(tmp, &file_info) != 0;
 
     ui_print("备份 %s...\n", name);
     if (0 != (ret = ensure_path_mounted(mount_point) != 0)) {
@@ -278,10 +316,9 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
         return ret;
     }
     compute_directory_stats(mount_point);
-    char tmp[PATH_MAX];
     scan_mounted_volumes();
     Volume *v = volume_for_path(mount_point);
-    MountedVolume *mv = NULL;
+    const MountedVolume *mv = NULL;
     if (v != NULL)
         mv = find_mounted_volume_by_mount_point(v->mount_point);
 
@@ -423,11 +460,11 @@ int nandroid_backup(const char* backup_path)
             return ret;
     }
 
-    if (is_data_media() || 0 != stat("/sdcard/.android_secure", &s)) {
+    if (is_data_media() || 0 != stat(get_android_secure_path(), &s)) {
         ui_print("没有发现 /sdcard/.android_secure . 将自动跳过对外置存储设备中程序的备份.\n");
     }
     else {
-        if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
+        if (0 != (ret = nandroid_backup_partition_extended(backup_path, get_android_secure_path(), 0)))
             return ret;
     }
 
@@ -507,7 +544,7 @@ static int unyaffs_wrapper(const char* backup_file_image, const char* backup_pat
     }
 
     while (fgets(tmp, PATH_MAX, fp) != NULL) {
-        tmp[PATH_MAX - 1] = NULL;
+        tmp[PATH_MAX - 1] = '\0';
         if (callback)
             nandroid_callback(tmp);
     }
@@ -515,22 +552,38 @@ static int unyaffs_wrapper(const char* backup_file_image, const char* backup_pat
     return __pclose(fp);
 }
 
-static int tar_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
-    char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s) ; cat %s* | tar xv ; exit $?", backup_path, backup_file_image);
-    FILE *fp = __popen(tmp, "r");
+static int do_tar_extract(char* command, int callback) {
+    char buf[PATH_MAX];
+    set_perf_mode(1);
+    FILE *fp = __popen(command, "r");
     if (fp == NULL) {
         ui_print("无法执行 tar.\n");
+        set_perf_mode(0);
         return -1;
     }
 
-    while (fgets(tmp, PATH_MAX, fp) != NULL) {
-        tmp[PATH_MAX - 1] = NULL;
+    while (fgets(buf, PATH_MAX, fp) != NULL) {
+        buf[PATH_MAX - 1] = '\0';
         if (callback)
-            nandroid_callback(tmp);
+            nandroid_callback(buf);
     }
 
+    set_perf_mode(0);
     return __pclose(fp);
+}
+
+static int tar_gzip_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "cd $(dirname %s) ; cat %s* | pigz -d -c | tar xv ; exit $?", backup_path, backup_file_image);
+
+    return do_tar_extract(tmp, callback);
+}
+
+static int tar_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "cd $(dirname %s) ; cat %s* | tar xv ; exit $?", backup_path, backup_file_image);
+
+    return do_tar_extract(tmp, callback);
 }
 
 static int dedupe_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
@@ -573,7 +626,7 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
         return NULL;
     }
     scan_mounted_volumes();
-    MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
+    const MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
     if (mv == NULL) {
         ui_print("找不到安装卷: %s\n", v->mount_point);
         return NULL;
@@ -583,15 +636,10 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
         return tar_extract_wrapper;
     }
 
-    // cwr 5, we prefer tar for everything unless it is yaffs2
-    char str[255];
-    char* partition;
-    property_get("ro.cwm.prefer_tar", str, "false");
-    if (strcmp("true", str) != 0) {
-        return unyaffs_wrapper;
-    }
-
-    if (strcmp("yaffs2", mv->filesystem) == 0) {
+     // Disable tar backups of yaffs2 by default
+    char prefer_tar[PROPERTY_VALUE_MAX];
+    property_get("ro.cwm.prefer_tar", prefer_tar, "false");
+    if (strcmp("yaffs2", mv->filesystem) == 0 && strcmp("false", prefer_tar) == 0) {
         return unyaffs_wrapper;
     }
 
@@ -603,7 +651,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     char* name = basename(mount_point);
 
     nandroid_restore_handler restore_handler = NULL;
-    const char *filesystems[] = { "yaffs2", "ext2", "ext3", "ext4", "vfat", "rfs", NULL };
+    const char *filesystems[] = { "yaffs2", "ext2", "ext3", "ext4", "vfat", "rfs", "f2fs", NULL };
     const char* backup_filesystem = NULL;
     Volume *vol = volume_for_path(mount_point);
     const char *device = NULL;
@@ -623,7 +671,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         // can't find the backup, it may be the new backup format?
         // iterate through the backup types
         printf("couldn't find default\n");
-        char *filesystem;
+        const char *filesystem;
         int i = 0;
         while ((filesystem = filesystems[i]) != NULL) {
             sprintf(tmp, "%s/%s.%s.img", backup_path, name, filesystem);
@@ -636,6 +684,12 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = tar_extract_wrapper;
+                break;
+            }
+            sprintf(tmp, "%s/%s.%s.tar.gz", backup_path, name, filesystem);
+            if (0 == (ret = stat(tmp, &file_info))) {
+                backup_filesystem = filesystem;
+                restore_handler = tar_gzip_extract_wrapper;
                 break;
             }
             sprintf(tmp, "%s/%s.%s.dup", backup_path, name, filesystem);
@@ -673,7 +727,10 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
 
     ensure_directory(mount_point);
 
-    int callback = stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info) != 0;
+    char path[PATH_MAX];
+    build_configuration_path(path, NANDROID_HIDE_PROGRESS_FILE);
+    ensure_path_mounted(path);
+    int callback = stat(path, &file_info) != 0;
 
     ui_print("恢复 %s...\n", name);
     if (backup_filesystem == NULL) {

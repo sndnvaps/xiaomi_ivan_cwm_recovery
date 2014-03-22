@@ -2,7 +2,8 @@
 
 require 'rubygems'
 require 'iconv'
-require 'RMagick'
+#require 'RMagick'
+require 'rmagic'
 include Magick
 
 s = ''
