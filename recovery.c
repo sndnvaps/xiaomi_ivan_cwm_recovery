@@ -877,6 +877,9 @@ prompt_and_wait() {
             case ITEM_ADVANCED:
                 show_advanced_menu();
                 break;
+	    case ITEM_TWRP_TAR:
+		show_advanced_twrpTar_menu();
+		break;
 
             case ITEM_POWEROFF:
                 poweroff = 1;

@@ -8,10 +8,12 @@ android_bootable_recovery
 
 *感谢TWRP提供的源代码*
 
+2014-03-23 更新
 下列代码都是提取自最新版本的TWRP源代码。
   - libtar 
   - openaes 
   - twrpTarMain 
+  - 添加twrpTar调用方法， 增加`高级备份 / 恢复功能`
 
 *为了能备份android 4.3 以上系统的SELinux selable*
 - 请在BoardConfig.mk中加入如下定义

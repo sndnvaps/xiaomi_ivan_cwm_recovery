@@ -1369,6 +1369,268 @@ void show_nandroid_advanced_restore_menu(const char* path)
     }
 }
 
+
+//for twrpTar backup method
+
+void show_advanced_twrpTar_menu() {
+
+    static char* headers[] = {  "twrpTar备份/恢复",
+                                "",
+                                NULL
+    };
+
+    char* list[] = {        "备份",
+                            "恢复",
+                            "删除",
+                            "高级恢复",
+                            NULL,
+    };
+ for (;;) {
+        int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
+        if (chosen_item == GO_BACK)
+            break;
+        switch (chosen_item)
+        {
+            case 0:
+                {
+                    char backup_path[PATH_MAX];
+                    time_t t = time(NULL);
+                    struct tm *tmp = localtime(&t);
+                    if (tmp == NULL)
+                    {
+                        struct timeval tp;
+                        gettimeofday(&tp, NULL);
+                        sprintf(backup_path, "/sdcard/clockworkmod/twrpTar/backup/%d", tp.tv_sec);
+                    }
+                    else
+                    {
+                        strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/twrpTar/backup/%F.%H.%M.%S", tmp);
+                    }
+                    nandroid_twrpTar_backup(backup_path);
+                    write_recovery_version();
+                }
+                break;
+            case 1:
+                show_nandroid_twrpTar_restore_menu("/sdcard");
+                write_recovery_version();
+                break;
+            case 2:
+                show_nandroid_delete_menu("/sdcard");
+                write_recovery_version();
+                break;
+            case 3:
+                show_nandroid_twrpTar_advanced_restore_menu("/sdcard");
+                write_recovery_version();
+                break;
+                               
+            default:
+                break;
+        }
+ }
+}
+
+
+void show_nandroid_twrpTar_restore_menu(const char* path)
+{
+    if (ensure_path_mounted(path) != 0) {
+        LOGE("Can't mount %s\n", path);
+        return;
+    }
+
+    static char* headers[] = {  "选择镜像恢复",
+                                "",
+                                NULL
+    };
+
+    char tmp[PATH_MAX];
+    sprintf(tmp, "%s/clockworkmod/twrpTar/backup/", path);
+    char* file = choose_file_menu(tmp, NULL, headers);
+    if (file == NULL)
+        return;
+    if(is_dualsystem()) {
+        int system = select_dualboot_restoremode("选择恢复模式:", file);
+        int result;
+        switch(system) {
+            case DUALBOOT_ITEM_RESTORE_SYSTEM0:
+                result = set_active_system(DUALBOOT_ITEM_SYSTEM0);
+                if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
+                    nandroid_twrpTar_restore(file, 1, 1, 1, 1, 1, 0, 0, 0, 0);
+                break;
+            case DUALBOOT_ITEM_RESTORE_SYSTEM1:
+                result = set_active_system(DUALBOOT_ITEM_SYSTEM1);
+                if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
+                    nandroid_twrpTar_restore(file, 0, 0, 0, 1, 1, 0, 1, 1, 1);
+                break;
+            case DUALBOOT_ITEM_RESTORE_BOTH:
+                result = set_active_system(DUALBOOT_ITEM_BOTH);
+                if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
+                    nandroid_twrpTar_restore(file, 1, 1, 1, 1, 1, 0, 1, 1, 1);
+                break;
+            case DUALBOOT_ITEM_RESTORE_ONE_TO_TWO:
+                result = set_active_system(DUALBOOT_ITEM_SYSTEM1);
+                if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
+                    nandroid_twrpTar_restore(file, 1, 1, 1, 1, 1, 0, 0, 0, 0);
+                break;
+            case DUALBOOT_ITEM_RESTORE_TWO_TO_ONE:
+                result = set_active_system(DUALBOOT_ITEM_SYSTEM0);
+                if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
+                    nandroid_twrpTar_restore(file, 0, 0, 0, 1, 1, 0, 1, 1, 1);
+                break;
+            case DUALBOOT_ITEM_RESTORE_BOTH_INTERCHANGED:
+                result = set_active_system(DUALBOOT_ITEM_INTERCHANGED);
+                if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
+                    nandroid_twrpTar_restore(file, 1, 1, 1, 1, 1, 0, 1, 1, 1);
+                break;
+
+            default:
+                return;
+        }
+        if(result!=0)
+            ui_print("设置系统失败，请重启!\n");
+        return;
+    }
+    if (confirm_selection("确认恢复?", "是的 - 恢复"))
+        nandroid_twrpTar_restore(file, 1, 1, 1, 1, 1, 0, 0, 0, 0);
+}
+
+void show_nandroid_twrpTar_advanced_restore_menu(const char* path)
+{
+    if (ensure_path_mounted(path) != 0) {
+        LOGE ("Can't mount sdcard\n");
+        return;
+    }
+
+    static char* advancedheaders[] = {  "选择恢复镜像",
+                                "",
+                                "先选择恢复镜像",
+                                "下个菜单将",
+                                "提供更多选项.",
+                                "",
+                                NULL
+    };
+
+    char tmp[PATH_MAX];
+    int system;
+    sprintf(tmp, "%s/clockworkmod/twrpTar/backup/", path);
+    char* file = choose_file_menu(tmp, NULL, advancedheaders);
+    if (file == NULL)
+        return;
+
+    static char* headers[] = {  "高级恢复",
+                                "",
+                                NULL
+    };
+
+    char* list[] = { "恢复 boot",
+                            "恢复 boot1",
+                            "恢复 system",
+                            "恢复 system1",
+                            "恢复 data",
+                            "恢复 data1",
+                            "恢复 cache",
+                            "恢复 sd-ext",
+                            "恢复 wimax",
+                            NULL
+    };
+    
+    if (0 != get_partition_device("wimax", tmp)) {
+        // disable wimax restore option
+        list[8] = NULL;
+    }
+
+    sprintf(tmp, "%s%s", file, "boot.img");
+    if(!fileExists(tmp))
+        list[0]=NULL;
+
+    sprintf(tmp, "%s%s", file, "boot1.img");
+    if(!fileExists(tmp))
+        list[1]=NULL;
+
+    sprintf(tmp, "%s%s", file, "system.ext4.tar.gz");
+    if(!fileExists(tmp))
+        list[2]=NULL;
+
+    sprintf(tmp, "%s%s", file, "system1.ext4.tar.gz");
+    if(!fileExists(tmp))
+        list[3]=NULL;
+
+    sprintf(tmp, "%s%s", file, "data.ext4.tar.gz");
+    if(!fileExists(tmp))
+        list[4]=NULL;
+
+    sprintf(tmp, "%s%s", file, "data1.ext4.tar.gz");
+    if(!fileExists(tmp))
+        list[5]=NULL;
+
+    sprintf(tmp, "%s%s", file, "cache.ext4.tar.gz");
+    if(!fileExists(tmp))
+        list[6]=NULL;
+
+
+    static char* confirm_restore  = "确认恢复?";
+
+    int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
+
+    if(is_dualsystem() && chosen_item>=0 && chosen_item<=5) {
+        if(!((chosen_item==4 || chosen_item==5) && !isTrueDualbootEnabled())) {
+            system = select_system("选择系统恢复:");
+            if (system>=0) {
+                if(set_active_system(system)!=0) {
+                    LOGE("Failed setting system. Please REBOOT.\n");
+                    return;
+                }
+            }
+            else return;
+        }
+    }
+
+    switch (chosen_item)
+    {
+        case 0:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 boot"))
+                nandroid_restore(file, 1, 0, 0, 0, 0, 0, 0, 0, 0);
+            break;
+        case 1:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 boot1"))
+                nandroid_restore(file, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+            break;
+        case 2:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 system"))
+                nandroid_twrpTar_restore(file, 0, 1, 0, 0, 0, 0, 0, 0, 0);
+            break;
+        case 3:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 system1"))
+                nandroid_twrpTar_restore(file, 0, 0, 0, 0, 0, 0, 1, 0, 0);
+            break;
+        case 4:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 data"))
+                nandroid_twrpTar_restore(file, 0, 0, 1, 0, 0, 0, 0, 0, 0);
+            break;
+        case 5:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 data1"))
+                nandroid_twrpTar_restore(file, 0, 0, 0, 0, 0, 0, 0, 1, 0);
+            break;
+        case 6:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 cache"))
+                nandroid_twrpTar_restore(file, 0, 0, 0, 1, 0, 0, 0, 0, 0);
+            break;
+        case 7:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 sd-ext"))
+                nandroid_twrpTar_restore(file, 0, 0, 0, 0, 1, 0, 0, 0, 0);
+            break;
+        case 8:
+            if (confirm_selection(confirm_restore, "是的 - 恢复 wimax"))
+                nandroid_restore(file, 0, 0, 0, 0, 0, 1, 0, 0, 0);
+            break;
+        
+        
+    }
+}
+
+//end twrptar 
+
+
+
 static void run_dedupe_gc(const char* other_sd) {
     ensure_path_mounted("/sdcard");
     nandroid_dedupe_gc("/sdcard/clockworkmod/blobs");
@@ -1430,6 +1692,11 @@ char* list_tgz_default[] = { "tar",
     }
 }
 
+
+
+
+
+
 void show_nandroid_menu()
 {
     static char* headers[] = {  "备份/恢复",
@@ -1442,7 +1709,6 @@ void show_nandroid_menu()
                             "删除",
                             "高级恢复",
                             "清理无用备份",
-                            "默认备份格式",
                             NULL,
                             NULL,
                             NULL,
@@ -1455,17 +1721,17 @@ void show_nandroid_menu()
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc";
-        list[6] = "备份到内置SD卡";
-        list[7] = "从内置SD卡恢复";
-        list[8] = "(高级)从内置SD卡恢复";
-        list[9] = "从内置SD卡删除";
+        list[5] = "备份到内置SD卡";
+        list[6] = "从内置SD卡恢复";
+        list[7] = "(高级)从内置SD卡恢复";
+        list[8] = "从内置SD卡删除";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd";
-        list[6] = "备份到外置SD卡";
-        list[7] = "从外置SD卡恢复";
-        list[8] = "(高级)从外置SD卡恢复";
-        list[9] = "从外置SD卡删除";
+        list[5] = "备份到外置SD卡";
+        list[6] = "从外置SD卡恢复";
+        list[7] = "(高级)从外置SD卡恢复";
+        list[8] = "从外置SD卡删除";
     }
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
     extend_nandroid_menu(list, 10, sizeof(list) / sizeof(char*));
@@ -1512,9 +1778,6 @@ void show_nandroid_menu()
                 run_dedupe_gc(other_sd);
                 break;
             case 5:
-                choose_default_backup_format();
-                break;
-            case 6:
                 {
                     char backup_path[PATH_MAX];
                     time_t t = time(NULL);
@@ -1546,17 +1809,17 @@ void show_nandroid_menu()
                     nandroid_backup(backup_path);
                 }
                 break;
-            case 7:
+            case 6:
                 if (other_sd != NULL) {
                     show_nandroid_restore_menu(other_sd);
                 }
                 break;
-            case 8:
+            case 7:
                 if (other_sd != NULL) {
                     show_nandroid_advanced_restore_menu(other_sd);
                 }
                 break;
-            case 9:
+            case 8:
                 if (other_sd != NULL) {
                     show_nandroid_delete_menu(other_sd);
                 }
@@ -2017,10 +2280,23 @@ int select_dualboot_restoremode(const char* title, const char* file)
                       NULL };
     char fileSystem0[PATH_MAX];
     char fileSystem1[PATH_MAX];
+
+    char twrpSystem0[PATH_MAX];
+    char twrpSystem1[PATH_MAX];
+
     sprintf(fileSystem0, "%s%s", file, "system.ext4.tar");
     sprintf(fileSystem1, "%s%s", file, "system1.ext4.tar");
-    int hasSystem0 = fileExists(fileSystem0);
-    int hasSystem1 = fileExists(fileSystem1);
+    
+    snprintf(twrpSystem0, PATH_MAX, "%s%s", file, "system.ext4.tar.gz");
+    snprintf(twrpSystem1, PATH_MAX, "%s%s", file, "system1.ext4.tar.gz");
+
+    int hasSystem0;
+    int hasSystem1;
+
+    if (fileExists(fileSystem0) || fileExists(twrpSystem0))
+	    hasSystem0 = 1;
+    if (fileExists(fileSystem1) || fileExists(twrpSystem1))
+	    hasSystem1 = 1;
 
     if(!hasSystem0) {
         items[0] = NULL;
