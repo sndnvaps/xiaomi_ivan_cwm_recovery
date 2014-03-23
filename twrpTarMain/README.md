@@ -1,7 +1,8 @@
 
--------------------------------------------------------
+**twrpTar command usages**
+
 <p>
- <code>
+ 
    	twrpTar <action> [options]
 
   actions: 
@@ -24,14 +25,14 @@
        twrpTar -c -d /cache -t /sdcard/test.tar
        twrpTar -x -d /cache -t /sdcard/test.tar
 
-</code>
 </p>
 
 
----------------------------------------------------
+
 **Backup cache partitions (ext4) logs**
 
-<code>
+<p>
+
 ~ # twrpTar -c -d /cache -t /sdcard/test-cache.tar
 I:Creating backup...
 I:Creating tar file '/sdcard/test-cache.tar'
@@ -73,5 +74,5 @@ I:createTarFork() process ended with RC=0
 
 
 tar created successfully.
-</code>
+</p>
 
