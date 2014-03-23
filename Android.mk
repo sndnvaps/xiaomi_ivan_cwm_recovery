@@ -144,7 +144,7 @@ ALL_DEFAULT_INSTALLED_MODULES += $(RECOVERY_SYMLINKS)
 
 # Now let's do recovery symlinks
 BUSYBOX_LINKS := $(shell cat external/busybox/busybox-minimal.links)
-exclude := tune2fs mke2fs
+exclude := tune2fs mke2fs 
 RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
 $(RECOVERY_BUSYBOX_SYMLINKS): BUSYBOX_BINARY := busybox
 $(RECOVERY_BUSYBOX_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
@@ -205,5 +205,9 @@ include $(commands_recovery_local_path)/utilities/Android.mk
 include $(commands_recovery_local_path)/su/Android.mk
 include $(commands_recovery_local_path)/voldclient/Android.mk
 include $(commands_recovery_local_path)/loki/Android.mk
+#for backup selabel 
+include $(commands_recovery_local_path)/libtar/Android.mk
+include $(commands_recovery_local_path)/openaes/Android.mk
+include $(commands_recovery_local_path)/twrpTarMain/Android.mk
 commands_recovery_local_path :=
 
