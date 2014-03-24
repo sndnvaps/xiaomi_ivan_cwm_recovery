@@ -1827,7 +1827,7 @@ void show_nandroid_menu()
                 break;
             case 8:
                 if (other_sd != NULL) {
-                    show_nandroid_delete_menu(other_sd);
+                    show_nandroid_delete_menu(other_sd,0);
                 }
                 break;
             default:
