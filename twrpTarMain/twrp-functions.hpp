@@ -50,8 +50,11 @@ public:
 	static int Try_Decrypting_File(string fn, string password); // -1 for some error, 0 for failed to decrypt, 1 for decrypted, 3 for decrypted and found gzip format
 	static unsigned long Get_File_Size(string Path);                            // Returns the size of a file
 	static std::string Remove_Trailing_Slashes(const std::string& path, bool leaveLast = false); // Normalizes the path, e.g /data//media/ -> /data/media
-
-
+		// read from file
+		static int read_file(string fn, string& results);
+		static int read_file_line_by_line(string fn, vector<string>& lines, bool skip_empty);
+		//write from file
+		static int write_file(string fn, string& line);
 };
 
 #endif // _TWRPFUNCTIONS_HPP

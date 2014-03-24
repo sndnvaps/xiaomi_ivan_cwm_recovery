@@ -57,7 +57,7 @@ int TWFunc::Exec_Cmd(const string& cmd, string &result) {
 		memset(&buffer, 0, sizeof(buffer));
 		if (fgets(buffer, 128, exec) != NULL) {
 			buffer[128] = '\n';
-			buffer[129] = NULL;
+			buffer[129] = '\0';
 			result += buffer;
 		}
 	}
@@ -289,5 +289,49 @@ std::string TWFunc::Remove_Trailing_Slashes(const std::string& path, bool leaveL
 	if(leaveLast)
 		res += '/';
 	return res;
+}
+
+int TWFunc::read_file(string fn, string& results) {
+	ifstream file;
+	file.open(fn.c_str(), ios::in);
+	if (file.is_open()) {
+		file >> results;
+		file.close();
+		return 0;
+	}
+	LOGINFO("Cannot find file %s\n", fn.c_str());
+	return -1;
+}
+
+int TWFunc::read_file_line_by_line(string fn, vector<string>& lines, bool skip_empty) {
+	if (fn.empty())
+		return 0;
+
+	ifstream file;
+	file.open(fn.c_str(), ios::in);
+	if (file.is_open()) {
+		string line;
+		while (getline(file, line)) {
+			if (line.empty() && skip_empty)
+				continue;
+			lines.push_back(line);
+		}
+		file.close();
+		return 1;
+	}
+	LOGINFO("Cannot find file %s\n", fn.c_str());
+	return 0;
+}
+
+int TWFunc::write_file(string fn, string& line) {
+	FILE *file;
+	file = fopen(fn.c_str(), "w");
+	if (file != NULL) {
+		fwrite(line.c_str(), line.size(), 1, file);
+		fclose(file);
+		return 0;
+	}
+	LOGINFO("Cannot find file %s\n", fn.c_str());
+	return -1;
 }
 

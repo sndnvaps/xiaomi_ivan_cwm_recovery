@@ -605,7 +605,7 @@ int twrpTar::tarList(std::vector<TarListStruct> *TarList, unsigned thread_id) {
 		LOGERR("Error closing '%s' on thread %i\n", tarfn.c_str(), thread_id);
 		return -3;
 	}
-	LOGINFO("Thread id %i tarList done, %i archives.\n", thread_id, archive_count, i, list_size);
+	LOGINFO("Thread id %i tarList done, %i archives.\n", thread_id, archive_count);
 	return 0;
 }
 

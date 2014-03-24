@@ -559,7 +559,7 @@ void show_nandroid_restore_menu(const char* path)
         nandroid_restore(file, 1, 1, 1, 1, 1, 0, 0, 0, 0);
 }
 
-void show_nandroid_delete_menu(const char* path)
+void show_nandroid_delete_menu(const char* path, int twrpTar)
 {
     if (ensure_path_mounted(path) != 0) {
         LOGE("Can't mount %s\n", path);
@@ -572,7 +572,13 @@ void show_nandroid_delete_menu(const char* path)
     };
 
     char tmp[PATH_MAX];
-    sprintf(tmp, "%s/clockworkmod/backup/", path);
+    if (twrpTar == 0) {
+            snprintf(tmp, PATH_MAX, "%s/clockworkmod/backup/", path);
+    } else if (twrpTar == 1 ) {
+	    snprintf(tmp, PATH_MAX, "%s/clockworkmod/twrpTar/backup", path);
+    }
+
+	
     char* file = choose_file_menu(tmp, NULL, headers);
     if (file == NULL)
         return;
@@ -1415,7 +1421,7 @@ void show_advanced_twrpTar_menu() {
                 write_recovery_version();
                 break;
             case 2:
-                show_nandroid_delete_menu("/sdcard");
+                show_nandroid_delete_menu("/sdcard", 1);
                 write_recovery_version();
                 break;
             case 3:
@@ -1767,7 +1773,7 @@ void show_nandroid_menu()
                 write_recovery_version();
                 break;
             case 2:
-                show_nandroid_delete_menu("/sdcard");
+                show_nandroid_delete_menu("/sdcard", 0);
                 write_recovery_version();
                 break;
             case 3:
