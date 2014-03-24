@@ -652,6 +652,9 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
     return tar_extract_wrapper;
 }
 
+static int twrpTar_gzip_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback);
+
+
 int nandroid_restore_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
     int ret = 0;
     char* name = basename(mount_point);
@@ -689,21 +692,23 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             sprintf(tmp, "%s/%s.%s.tar", backup_path, name, filesystem);
             if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
-                restore_handler = tar_extract_wrapper;
+                restore_handler = twrpTar_gzip_extract_wrapper;
                 break;
             }
-            sprintf(tmp, "%s/%s.%s.tar.gz", backup_path, name, filesystem);
+            sprintf(tmp, "%s/%s.%s.tar.gz", backup_path, name, filesystem);//因为备份4.3, 4.4系统用的格式是tar.gz格式
             if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
-                restore_handler = tar_gzip_extract_wrapper;
+                restore_handler = twrpTar_gzip_extract_wrapper;
                 break;
             }
-            sprintf(tmp, "%s/%s.%s.dup", backup_path, name, filesystem);
-            if (0 == (ret = stat(tmp, &file_info))) {
-                backup_filesystem = filesystem;
-                restore_handler = dedupe_extract_wrapper;
-                break;
-            }
+
+	    sprintf(tmp, "%s/%s.%s.tar.gz000", backup_path, name, filesystem); //分卷功能
+	    if (0 == (ret = stat(tmp, &file_info))) {
+		    backup_filesystem = filesystem;
+		    restore_handler = twrpTar_gzip_extract_wrapper;
+		    break;
+	    }
+
             i++;
         }
 
@@ -1005,6 +1010,8 @@ static int twrpTar_gzip_extract_wrapper(const char* backup_file_image, const cha
 	return do_tar_extract(tmp, callback);
 }
 
+int nandroid_twrpTar_backup_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished);
+
 int nandroid_twrpTar_backup_partition(const char* backup_path, const char* root) {
     Volume *vol = volume_for_path(root);
     // make sure the volume exists before attempting anything...
@@ -1240,20 +1247,27 @@ int nandroid_twrpTar_restore_partition_extended(const char* backup_path, const c
         int i = 0;
         while ((filesystem = filesystems[i]) != NULL) {
         
-           /*
+           
 	      	sprintf(tmp, "%s/%s.%s.tar", backup_path, name, filesystem);
             if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = tar_extract_wrapper;
                 break;
             }
-	    */
+	    
             sprintf(tmp, "%s/%s.%s.tar.gz", backup_path, name, filesystem);
             if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = twrpTar_gzip_extract_wrapper;
                 break;
             }
+
+	    sprintf(tmp, "%s/%s.%s.tar.gz000", backup_path, name, filesystem);
+	    if (0 == (ret = stat(tmp, &file_info))) {
+		    backup_filesystem = filesystem;
+		    restore_handler = twrpTar_gzip_extract_wrapper;
+		    break;
+	    }
             i++;
         }
 

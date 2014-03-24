@@ -520,12 +520,12 @@ void show_nandroid_restore_menu(const char* path)
             case DUALBOOT_ITEM_RESTORE_SYSTEM0:
                 result = set_active_system(DUALBOOT_ITEM_SYSTEM0);
                 if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
-                    nandroid_restore(file, 1, 1, 1, 1, 1, 0, 0, 0, 0);
+                    nandroid_twrpTar_restore(file, 1, 1, 1, 1, 1, 0, 0, 0, 0);
                 break;
             case DUALBOOT_ITEM_RESTORE_SYSTEM1:
                 result = set_active_system(DUALBOOT_ITEM_SYSTEM1);
                 if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
-                    nandroid_restore(file, 0, 0, 0, 1, 1, 0, 1, 1, 1);
+                    nandroid_twrpTar_restore(file, 0, 0, 0, 1, 1, 0, 1, 1, 1);
                 break;
             case DUALBOOT_ITEM_RESTORE_BOTH:
                 result = set_active_system(DUALBOOT_ITEM_BOTH);
@@ -535,17 +535,17 @@ void show_nandroid_restore_menu(const char* path)
             case DUALBOOT_ITEM_RESTORE_ONE_TO_TWO:
                 result = set_active_system(DUALBOOT_ITEM_SYSTEM1);
                 if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
-                    nandroid_restore(file, 1, 1, 1, 1, 1, 0, 0, 0, 0);
+                    nandroid_twrpTar_restore(file, 1, 1, 1, 1, 1, 0, 0, 0, 0);
                 break;
             case DUALBOOT_ITEM_RESTORE_TWO_TO_ONE:
                 result = set_active_system(DUALBOOT_ITEM_SYSTEM0);
                 if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
-                    nandroid_restore(file, 0, 0, 0, 1, 1, 0, 1, 1, 1);
+                    nandroid_twrpTar_restore(file, 0, 0, 0, 1, 1, 0, 1, 1, 1);
                 break;
             case DUALBOOT_ITEM_RESTORE_BOTH_INTERCHANGED:
                 result = set_active_system(DUALBOOT_ITEM_INTERCHANGED);
                 if (result==0 && confirm_selection("确认恢复?", "是的 - 恢复"))
-                    nandroid_restore(file, 1, 1, 1, 1, 1, 0, 1, 1, 1);
+                    nandroid_twrpTar_restore(file, 1, 1, 1, 1, 1, 0, 1, 1, 1);
                 break;
 
             default:
