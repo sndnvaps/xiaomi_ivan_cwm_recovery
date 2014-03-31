@@ -76,10 +76,12 @@ $(foreach board_define,$(BOARD_RECOVERY_DEFINES), \
 LOCAL_STATIC_LIBRARIES :=
 
 LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
-LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external/fsck_msdos
+LOCAL_C_INCLUDES += system/extras/ext4_utils $(LOCAL_PATH)/fs_mgr/include external/fsck_msdos
 LOCAL_C_INCLUDES += system/vold
 
-LOCAL_STATIC_LIBRARIES += libext4_utils_static libz libsparse_static
+LOCAL_STATIC_LIBRARIES += libext4_utils_static \
+			  libz libsparse_static \
+			  libfs_mgr_xiaomi
 
 ifeq ($(ENABLE_LOKI_RECOVERY),true)
   LOCAL_CFLAGS += -DENABLE_LOKI
@@ -112,7 +114,7 @@ LOCAL_STATIC_LIBRARIES += libminzip libunz libmincrypt
 LOCAL_STATIC_LIBRARIES += libminizip libminadbd libedify libbusybox libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image
 LOCAL_LDFLAGS += -Wl,--no-fatal-warnings
 
-LOCAL_STATIC_LIBRARIES += libfs_mgr libdedupe libcrypto_static libcrecovery libflashutils libmtdutils libmmcutils libbmlutils
+LOCAL_STATIC_LIBRARIES +=  libdedupe libcrypto_static libcrecovery libflashutils libmtdutils libmmcutils libbmlutils
 
 ifeq ($(BOARD_USES_BML_OVER_MTD),true)
 LOCAL_STATIC_LIBRARIES += libbml_over_mtd
@@ -180,7 +182,7 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := verifier_test.c verifier.c
 
-LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include
+LOCAL_C_INCLUDES += system/extras/ext4_utils $(LOCAL_PATH)/fs_mgr/include
 
 LOCAL_MODULE := verifier_test
 
@@ -188,7 +190,8 @@ LOCAL_FORCE_STATIC_EXECUTABLE := true
 
 LOCAL_MODULE_TAGS := tests
 
-LOCAL_STATIC_LIBRARIES := libmincrypt libcutils libstdc++ libc
+LOCAL_STATIC_LIBRARIES := libmincrypt libcutils libstdc++ libc \
+	                  libfs_mgr_xiaomi
 
 include $(BUILD_EXECUTABLE)
 
@@ -214,6 +217,7 @@ include $(commands_recovery_local_path)/loki/Android.mk
 include $(commands_recovery_local_path)/libtar/Android.mk \
         $(commands_recovery_local_path)/openaes/Android.mk \
         $(commands_recovery_local_path)/twrpTarMain/Android.mk \
-	$(commands_recovery_local_path)/toolbox/Android.mk 
+	$(commands_recovery_local_path)/toolbox/Android.mk
+include $(commands_recovery_local_path)/fs_mgr/Android.mk 
 commands_recovery_local_path :=
 
