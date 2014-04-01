@@ -367,7 +367,7 @@ int nandroid_backup_partition(const char* backup_path, const char* root) {
             sprintf(tmp, "%s/%s.img", backup_path, name);
         ui_print("备份 %s image...\n", name);
 
-        if (0 != (ret = backup_raw_partition(vol->fs_type, vol->device, tmp))) {
+        if (0 != (ret = backup_raw_partition(vol->fs_type, vol->blk_device, tmp))) {
             ui_print("Error while backing up %s image!", name);
             return ret;
         }
@@ -431,14 +431,14 @@ int nandroid_backup(const char* backup_path)
         return ret;
 
     Volume *vol = volume_for_path("/wimax");
-    if (vol != NULL && 0 == stat(vol->device, &s))
+    if (vol != NULL && 0 == stat(vol->blk_device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
         ui_print("备份 WiMAX...\n");
         serialno[0] = 0;
         property_get("ro.serialno", serialno, "");
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
-        ret = backup_raw_partition(vol->fs_type, vol->device, tmp);
+        ret = backup_raw_partition(vol->fs_type, vol->blk_device, tmp);
         if (0 != ret)
             return print_and_error("Error while dumping WiMAX image!\n");
     }
@@ -474,7 +474,7 @@ int nandroid_backup(const char* backup_path)
         return ret;
 
     vol = volume_for_path("/sd-ext");
-    if (vol == NULL || 0 != stat(vol->device, &s))
+    if (vol == NULL || 0 != stat(vol->blk_device, &s))
     {
         ui_print("没有发现 sd-ext found. 自动跳过备份 sd-ext.\n");
     }
@@ -665,7 +665,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     Volume *vol = volume_for_path(mount_point);
     const char *device = NULL;
     if (vol != NULL)
-        device = vol->device;
+        device = vol->blk_device;
 
     char tmp[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
@@ -810,7 +810,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
             sprintf(tmp, "%s%s.img", backup_path, root);
 
         ui_print("恢复 %s image...\n", name);
-        if (0 != (ret = restore_raw_partition(vol->fs_type, vol->device, tmp))) {
+        if (0 != (ret = restore_raw_partition(vol->fs_type, vol->blk_device, tmp))) {
             ui_print("写入 %s 发生错误!", name);
             return ret;
         }
@@ -845,7 +845,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     
     struct stat s;
     Volume *vol = volume_for_path("/wimax");
-    if (restore_wimax && vol != NULL && 0 == stat(vol->device, &s))
+    if (restore_wimax && vol != NULL && 0 == stat(vol->blk_device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
 
@@ -867,7 +867,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
             if (0 != (ret = format_volume("/wimax")))
                 return print_and_error("Error while formatting wimax!\n");
             ui_print("恢复 WiMAX image...\n");
-            if (0 != (ret = restore_raw_partition(vol->fs_type, vol->device, tmp)))
+            if (0 != (ret = restore_raw_partition(vol->fs_type, vol->blk_device, tmp)))
                 return ret;
         }
     }
@@ -1031,7 +1031,7 @@ int nandroid_twrpTar_backup_partition(const char* backup_path, const char* root)
             sprintf(tmp, "%s/%s.img", backup_path, name);
         ui_print("备份 %s image...\n", name);
 
-        if (0 != (ret = backup_raw_partition(vol->fs_type, vol->device, tmp))) {
+        if (0 != (ret = backup_raw_partition(vol->fs_type, vol->blk_device, tmp))) {
             ui_print("Error while backing up %s image!", name);
             return ret;
         }
@@ -1144,14 +1144,14 @@ int nandroid_twrpTar_backup(const char* backup_path)
         return ret;
 
     Volume *vol = volume_for_path("/wimax");
-    if (vol != NULL && 0 == stat(vol->device, &s))
+    if (vol != NULL && 0 == stat(vol->blk_device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
         ui_print("备份 WiMAX...\n");
         serialno[0] = 0;
         property_get("ro.serialno", serialno, "");
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
-        ret = backup_raw_partition(vol->fs_type, vol->device, tmp);
+        ret = backup_raw_partition(vol->fs_type, vol->blk_device, tmp);
         if (0 != ret)
             return print_and_error("Error while dumping WiMAX image!\n");
     }
@@ -1187,7 +1187,7 @@ int nandroid_twrpTar_backup(const char* backup_path)
         return ret;
 
     vol = volume_for_path("/sd-ext");
-    if (vol == NULL || 0 != stat(vol->device, &s))
+    if (vol == NULL || 0 != stat(vol->blk_device, &s))
     {
         ui_print("没有发现 sd-ext found. 自动跳过备份 sd-ext.\n");
     }
@@ -1228,7 +1228,7 @@ int nandroid_twrpTar_restore_partition_extended(const char* backup_path, const c
     Volume *vol = volume_for_path(mount_point);
     const char *device = NULL;
     if (vol != NULL)
-        device = vol->device;
+        device = vol->blk_device;
 
     char tmp[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
@@ -1361,7 +1361,7 @@ int nandroid_twrpTar_restore_partition(const char* backup_path, const char* root
             sprintf(tmp, "%s%s.img", backup_path, root);
 
         ui_print("恢复 %s image...\n", name);
-        if (0 != (ret = restore_raw_partition(vol->fs_type, vol->device, tmp))) {
+        if (0 != (ret = restore_raw_partition(vol->fs_type, vol->blk_device, tmp))) {
             ui_print("写入 %s 发生错误!", name);
             return ret;
         }
@@ -1396,7 +1396,7 @@ int nandroid_twrpTar_restore(const char* backup_path, int restore_boot, int rest
     
     struct stat s;
     Volume *vol = volume_for_path("/wimax");
-    if (restore_wimax && vol != NULL && 0 == stat(vol->device, &s))
+    if (restore_wimax && vol != NULL && 0 == stat(vol->blk_device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
 
@@ -1418,7 +1418,7 @@ int nandroid_twrpTar_restore(const char* backup_path, int restore_boot, int rest
             if (0 != (ret = format_volume("/wimax")))
                 return print_and_error("Error while formatting wimax!\n");
             ui_print("恢复 WiMAX image...\n");
-            if (0 != (ret = restore_raw_partition(vol->fs_type, vol->device, tmp)))
+            if (0 != (ret = restore_raw_partition(vol->fs_type, vol->blk_device, tmp)))
                 return ret;
         }
     }

@@ -42,10 +42,15 @@ int ensure_path_unmounted(const char* path);
 int format_volume(const char* volume);
 
 char* get_primary_storage_path();
+char** get_extra_storage_paths();
 char* get_android_secure_path();
+void setup_legacy_storage_paths();
+int get_num_extra_volumes();
 int get_num_volumes();
 
 Volume* get_device_volumes();
+
+#define MAX_NUM_MANAGED_VOLUMES 10
 
 int is_data_media();
 void setup_data_media();

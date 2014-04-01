@@ -151,7 +151,7 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
     }
     
     if (strcmp(path, "/data") == 0 && has_datadata()) {
-        ui_print("正在格式化 /datadata...\n", path);
+        ui_print("正在格式化 %s...\n", path);
         if (0 != format_volume("/datadata")) {
             free(path);
             return StringValue(strdup(""));
@@ -321,6 +321,7 @@ void remove_extendedcommand()
 
 int run_and_remove_extendedcommand()
 {
+     char* primary_path = get_primary_storage_path();
     char tmp[PATH_MAX];
     sprintf(tmp, "cp %s /tmp/%s", EXTENDEDCOMMAND_SCRIPT, basename(EXTENDEDCOMMAND_SCRIPT));
     __system(tmp);
@@ -328,7 +329,7 @@ int run_and_remove_extendedcommand()
     int i = 0;
     for (i = 20; i > 0; i--) {
         ui_print("Waiting for SD Card to mount (%ds)\n", i);
-        if (ensure_path_mounted("/sdcard") == 0) {
+        if (ensure_path_mounted(primary_path) == 0) {
             ui_print("SD Card mounted...\n");
             break;
         }
@@ -345,14 +346,14 @@ int run_and_remove_extendedcommand()
         ui_print("SD Card marker not found...\n");
         if (volume_for_path("/emmc") != NULL) {
             ui_print("Checking Internal SD Card marker...\n");
-            ensure_path_unmounted("/sdcard");
-            if (ensure_path_mounted_at_mount_point("/emmc", "/sdcard") != 0) {
+            ensure_path_unmounted(primary_path);
+            if (ensure_path_mounted_at_mount_point("/emmc", primary_path) != 0) {
                 ui_print("Internal SD Card marker not found... continuing anyways.\n");
                 // unmount everything, and remount as normal
                 ensure_path_unmounted("/emmc");
-                ensure_path_unmounted("/sdcard");
+                ensure_path_unmounted(primary_path);
 
-                ensure_path_mounted("/sdcard");
+                ensure_path_mounted(primary_path);
             }
         }
     }

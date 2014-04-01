@@ -76,7 +76,7 @@ $(foreach board_define,$(BOARD_RECOVERY_DEFINES), \
 LOCAL_STATIC_LIBRARIES :=
 
 LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
-LOCAL_C_INCLUDES += system/extras/ext4_utils $(LOCAL_PATH)/fs_mgr/include external/fsck_msdos
+LOCAL_C_INCLUDES += system/extras/ext4_utils external/fsck_msdos
 LOCAL_C_INCLUDES += system/vold
 
 LOCAL_STATIC_LIBRARIES += libext4_utils_static \
@@ -182,7 +182,7 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := verifier_test.c verifier.c
 
-LOCAL_C_INCLUDES += system/extras/ext4_utils $(LOCAL_PATH)/fs_mgr/include
+LOCAL_C_INCLUDES += system/extras/ext4_utils 
 
 LOCAL_MODULE := verifier_test
 

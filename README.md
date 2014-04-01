@@ -27,6 +27,16 @@ android_bootable_recovery
   - 修改twrpTar单个文件最大的体积为500MB,当备份文件体积大于500MB会自动分卷
 
 
+2014-04-01 更新
+    修改分区表格式为最新版本
+    使用fs_mgr读取分区表
+    增加OTG USB功能
+    能从otg usb挂载的U盘中安装刷机包(/storage/usbdisk)
+    去除部分没有用的代码
+
+bug: 无法使用大容量模式
+    
+
 
 *为了能备份android 4.3 以上系统的SELinux selable*
 - 请在BoardConfig.mk中加入如下定义

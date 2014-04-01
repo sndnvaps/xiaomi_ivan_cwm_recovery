@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __CORE_FS_MGR_H
-#define __CORE_FS_MGR_H
+#ifndef __XIAOMI_FS_MGR_H
+#define __XIAOMI_FS_MGR_H
 
 #include <stdint.h>
 #include <linux/dm-ioctl.h>
@@ -83,5 +83,5 @@ int fs_mgr_swapon_all(struct fstab *fstab);
 }
 #endif
 
-#endif /* __CORE_FS_MGR_H */
+#endif /* __XIAOMI_FS_MGR_H */
 
