@@ -183,6 +183,7 @@ int replace_device_node(Volume* vol, struct stat* stat) {
         LOGE("replace_device_node: could not unmount device!\n");
         return -1;
     } if(unlink(resolved_path)!=0) {
+	LOGI("%s\n", resolved_path);
         LOGE("replace_device_node: could not delete node!\n");
         return -1;
     } if(mknod(resolved_path, stat->st_mode, stat->st_rdev)!=0) {

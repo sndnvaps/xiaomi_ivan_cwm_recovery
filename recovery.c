@@ -1039,6 +1039,7 @@ main(int argc, char **argv) {
     vold_client_start(&v_callbacks, 0);
     vold_set_automount(1);
     setup_legacy_storage_paths();
+    ui_print("编译日期: %s\n", EXPAND(RECOVERY_BUILD_DATE));
     ui_print("By 秋叶随风Ivan \n");
     ui_print("By sndnvaps \n");
     LOGI("Processing arguments.\n");

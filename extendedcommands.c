@@ -1336,9 +1336,9 @@ void show_advanced_twrpTar_menu() {
                     time_tm = gmtime(&timep);
 
                    
-                        snprintf(backup_path, PATH_MAX, "%s/clockworkmod/twrpTar/backup/%02d%02d%02d-%02d%02d"
-					,primary_path,time_tm->tm_year,
-                        time_tm->tm_mon + 1, time_tm->tm_mday, time_tm->tm_hour, time_tm->tm_min);
+                        snprintf(backup_path, PATH_MAX, "%s/clockworkmod/twrpTar/backup/%03d%02d%02d-%02d%02d"
+					,primary_path,time_tm->tm_year + 1900,
+                        time_tm->tm_mon + 1, time_tm->tm_mday, time_tm->tm_hour + 8, time_tm->tm_min);
                    
                     nandroid_twrpTar_backup(backup_path);
                     write_recovery_version();
@@ -1689,9 +1689,9 @@ void show_nandroid_menu()
                     time_tm = gmtime(&timep);
 
                    
-                        snprintf(backup_path, PATH_MAX, "%s/clockworkmod/backup/%02d%02d%02d-%02d%02d"
-					,primary_path,time_tm->tm_year,
-                        time_tm->tm_mon + 1, time_tm->tm_mday, time_tm->tm_hour, time_tm->tm_min);
+                        snprintf(backup_path, PATH_MAX, "%s/clockworkmod/backup/%03d%02d%02d-%02d%02d"
+					,primary_path,time_tm->tm_year + 1900,
+                        time_tm->tm_mon + 1, time_tm->tm_mday, time_tm->tm_hour + 8, time_tm->tm_min);
                     nandroid_backup(backup_path);
                     write_recovery_version();
                 }
@@ -2023,9 +2023,9 @@ void create_fstab()
     write_fstab_root("/emmc", file);
     write_fstab_root("/system", file);
     write_fstab_root("/system1", file);
-    write_fstab_root("/sdcard", file);
-    write_fstab_root("/sd-ext", file);
-    write_fstab_root("/external_sd", file);
+    //write_fstab_root("/sdcard", file);
+   // write_fstab_root("/sd-ext", file);
+    //write_fstab_root("/external_sd", file);
     fclose(file);
     LOGI("Completed outputting fstab.\n");
 }
@@ -2084,7 +2084,7 @@ void process_volumes() {
     struct timeval tp;
     gettimeofday(&tp, NULL);
     sprintf(backup_name, "before-ext4-convert-%d", tp.tv_sec);
-    sprintf(backup_path, "/sdcard/clockworkmod/backup/%s", backup_name);
+    sprintf(backup_path, "%s/clockworkmod/backup/%s",get_primary_storage_path(), backup_name);
 
     ui_set_show_text(1);
     ui_print("Filesystems need to be converted to ext4.\n");
@@ -2100,12 +2100,20 @@ void process_volumes() {
 
 void handle_failure(int ret)
 {
+    char *primary_path = get_primary_storage_path();
+    char tmp[PATH_MAX];
+    struct stat st;
     if (ret == 0)
         return;
-    if (0 != ensure_path_mounted(get_primary_storage_path()))
+    if (0 != ensure_path_mounted(primary_path))
         return;
-    mkdir("/sdcard/clockworkmod", S_IRWXU | S_IRWXG | S_IRWXO);
-    __system("cp /tmp/recovery.log /sdcard/clockworkmod/recovery.log");
+    
+    snprintf(tmp, PATH_MAX, "%s/clockworkmod", primary_path);
+    if (stat(tmp, &st) != 0)
+	    mkdir("/sdcard/clockworkmod", S_IRWXU | S_IRWXG | S_IRWXO);
+
+    snprintf(tmp, PATH_MAX, "cp /tmp/recovery.log %s/clockworkmod/recovery.log", primary_path);
+    __system(tmp);
     ui_print("/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.\n");
 }
 

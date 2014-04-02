@@ -1031,8 +1031,19 @@ int nandroid_twrpTar_backup_partition(const char* backup_path, const char* root)
             sprintf(tmp, "%s/%s.img", backup_path, name);
         ui_print("备份 %s image...\n", name);
 
+	if (strcmp(name, "boot1") == 0) {
+		ensure_path_mounted(backup_path);
+		ui_print("boot1 : %s\n", tmp);
+		ui_print("boot1 fs_type : %s\n",
+			 "boot1 blk_device : %s\n",
+				vol->fs_type, vol->blk_device);
+            	}
+	
+
         if (0 != (ret = backup_raw_partition(vol->fs_type, vol->blk_device, tmp))) {
-            ui_print("Error while backing up %s image!", name);
+	    
+            ui_print("Error while backing up %s image!\n", name);
+	    ui_print("backup name: %s\n", tmp);
             return ret;
         }
         ui_print("备份 %s image 完成.\n", name);
