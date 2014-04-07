@@ -899,7 +899,7 @@ MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     fs_matrix[3] = (MFMatrix){ "mtd",       0,  0 };
     fs_matrix[4] = (MFMatrix){ "ramdisk",   0,  0 };
 
-    const int NUM_MNT_PNTS = 6;
+    const int NUM_MNT_PNTS = 14;
     MFMatrix *mp_matrix = malloc(NUM_MNT_PNTS * sizeof(MFMatrix));
     // Defined capabilities:   mount_point   mnt fmt
     mp_matrix[0] = (MFMatrix){ "/misc",       0,  0 };
@@ -908,6 +908,18 @@ MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     mp_matrix[3] = (MFMatrix){ "/recovery",   0,  0 };
     mp_matrix[4] = (MFMatrix){ "/efs",        0,  0 };
     mp_matrix[5] = (MFMatrix){ "/wimax",      0,  0 };
+    //for xiaomi device 
+    mp_matrix[6] = (MFMatrix){ "/sbl1",       0,  0 };
+    mp_matrix[7] = (MFMatrix){ "/sbl2",       0,  0 };
+    mp_matrix[8] = (MFMatrix){ "/sbl3",       0,  0 };
+    mp_matrix[9] = (MFMatrix){ "/aboot",      0,  0 };
+    mp_matrix[10] = (MFMatrix){ "/rpm",       0,  0 };
+    mp_matrix[11] = (MFMatrix){ "/tz",        0,  0 };
+    mp_matrix[12] = (MFMatrix){ "/firmware",  0,  0 };
+    mp_matrix[13] = (MFMatrix){ "/persist",   0,  0 };
+    //end for xiaomi device 
+
+
 
     int i;
     for (i = 0; i < NUM_FS_TYPES; i++) {
