@@ -1034,8 +1034,7 @@ int nandroid_twrpTar_backup_partition(const char* backup_path, const char* root)
 	if (strcmp(name, "boot1") == 0) {
 		ensure_path_mounted(backup_path);
 		ui_print("boot1 : %s\n", tmp);
-		ui_print("boot1 fs_type : %s\n",
-			 "boot1 blk_device : %s\n",
+		ui_print("boot1 fs_type : \nboot1 blk_device : %s\n",
 				vol->fs_type, vol->blk_device);
             	}
 	

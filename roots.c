@@ -520,6 +520,43 @@ int ensure_path_unmounted(const char* path) {
     return unmount_mounted_volume(mv);
 }
 
+int handle_format_system1() {
+//DUALBOOT_ITEM_BOTH    -> 0 
+//DUALBOOT_ITEM_SYSTEM0 -> 1
+//DUALBOOT_ITEM_SYSTEM1 -> 2
+
+
+
+	struct selabel_handle *SELinux_system1 = NULL; 
+	Volume* system0 = volume_for_path("/system");
+	Volume* system1 = volume_for_path("/system1");
+	int res = 0;
+
+	if (replace_device_node(system0, &system1->st) == 0) {
+		 printf("成功切换 /system分区的 为 /system1分区\n");
+		 printf("开始格式化 /system1\n");
+	int result = make_ext4fs(system0->blk_device, system0->length, "/system", SELinux_system1);
+        if (result != 0) {
+            LOGE("format_volume: make_extf4fs failed on %s\n", system0->blk_device);
+            return -1;
+            }
+	 } else {
+		 printf("切换 /system1 -> /system 分区失败\n");
+		 printf("重新切换回原来的分区模式 \n");
+		 replace_device_node(system0, &system0->st);
+		 return -1;
+	 }
+
+	 if (replace_device_node(system0, &system0->st) != 0) {
+		 printf("切换回原来的分区模式失败\n");
+		 return -1;
+	 }
+
+	 return 0;
+	                                              
+}
+
+
 extern struct selabel_handle *sehandle;
 static int handle_data_media = 0;
 static int ignore_data_media = 0;
@@ -534,6 +571,10 @@ int format_volume(const char* volume) {
     }
     if (strstr(volume, "/data") == volume && is_dualsystem() && isTrueDualbootEnabled() && !handle_truedualsystem) {
         return format_unknown_device(NULL, volume, NULL);
+    }
+
+    if (strstr(volume, "/system1") == volume) {
+	    return handle_format_system1();
     }
     
     Volume* v = volume_for_path(volume);
@@ -649,3 +690,6 @@ void setup_legacy_storage_paths() {
         symlink(primary_path, "/sdcard");
     }
 }
+
+
+

@@ -32,7 +32,7 @@ extern int erase_image_main(int argc, char **argv);
 extern int mkyaffs2image_main(int argc, char **argv);
 extern int unyaffs_main(int argc, char **argv);
 extern int make_ext4fs_main(int argc, char **argv);
-extern int reboot_main(int argc, char **argv);
+//extern int reboot_main(int argc, char **argv);
 extern int poweroff_main(int argc, char **argv);
 extern int setprop_main(int argc, char **argv);
 extern int getprop_main(int argc, char **argv);
@@ -68,8 +68,8 @@ static const struct recovery_cmd recovery_cmds[] = {
     { "make_ext4fs",    make_ext4fs_main },
     { "nandroid",       nandroid_main },
     { "bu",             bu_main },
-    { "reboot",         reboot_main },
-    { "poweroff",       reboot_main },
+//    { "reboot",         reboot_main },
+//    { "poweroff",       reboot_main },
     { "setprop",        setprop_main },
     { "getprop",        getprop_main },
     { "fsck_msdos",     fsck_msdos_main },

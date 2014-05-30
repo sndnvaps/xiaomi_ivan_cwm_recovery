@@ -35,8 +35,12 @@ android_bootable_recovery
     去除部分没有用的代码
 
 bug: 无法使用大容量模式
-    
 
+2014-05-30  change 
+    添加新方法用来格式化 '/system1'分区
+    添加 Ignore 分区
+    重点部分方法
+    重写分区表 
 
 *为了能备份android 4.3 以上系统的SELinux selable*
 - 请在BoardConfig.mk中加入如下定义
@@ -44,3 +48,17 @@ bug: 无法使用大容量模式
 
 **twrpTar使用说明书**
 [twrpTar说明书](twrpTarMain/README.md)
+
+**fs_mgr修改说明**
+[fs_mgr修改简介](fs_mgr/README.md)
+
+------------------------------------------------------------------
+**函数声明**
+
+	minui/minui.h:37:int gr_text(int x, int y, const char *s);
+	这个gr_text()函数参数是三个，如果你在Device/xiaomi/aries/recovery/graphics.c中定义的 gr_text()函数是四个参数的。
+	请修改gr_text()函数在minui.h中的声明为
+	int gr_text(int x ,int y, const char *, int bold);
+
+---------------------------------------------------------------
+

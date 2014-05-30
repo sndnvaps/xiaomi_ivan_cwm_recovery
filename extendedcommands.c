@@ -914,9 +914,9 @@ MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     mp_matrix[8] = (MFMatrix){ "/sbl3",       0,  0 };
     mp_matrix[9] = (MFMatrix){ "/aboot",      0,  0 };
     mp_matrix[10] = (MFMatrix){ "/rpm",       0,  0 };
-    mp_matrix[11] = (MFMatrix){ "/tz",        0,  0 };
-    mp_matrix[12] = (MFMatrix){ "/firmware",  0,  0 };
-    mp_matrix[13] = (MFMatrix){ "/persist",   0,  0 };
+    mp_matrix[11] = (MFMatrix){ "/tz",        0,  0 }; 
+    mp_matrix[12] = (MFMatrix){ "/persist",   0,  0 };
+    mp_matrix[13] = (MFMatrix){ "/radio1",    0,  0 }; 
     //end for xiaomi device 
 
 

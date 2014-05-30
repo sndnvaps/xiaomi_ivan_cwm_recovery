@@ -60,4 +60,7 @@ void ignore_data_media_workaround(int ignore);
 void handle_data_media_format(int handle);
 void handle_truedualsystem_format(int handle);
 
+int is_dualsystem(); 
+int set_active_system(int num); 
+
 #endif  // RECOVERY_ROOTS_H_
